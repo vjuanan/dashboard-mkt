@@ -3147,3 +3147,80 @@ document.addEventListener('keydown', (e) => {
 });
 
 
+// ===== BUDGETS FEATURE =====
+
+async function loadBudgets() {
+    // Get current month YYYY-MM
+    const now = new Date();
+    const monthStr = now.toISOString().slice(0, 7); // "2024-05"
+
+    const { data, error } = await db.budgets.get(monthStr);
+
+    if (data) {
+        currentBudgets = {
+            google: parseFloat(data.google_budget) || 0,
+            meta: parseFloat(data.meta_budget) || 0,
+            total: (parseFloat(data.google_budget) || 0) + (parseFloat(data.meta_budget) || 0)
+        };
+    } else {
+        // No budget found for this month, reset to 0
+        currentBudgets = { google: 0, meta: 0, total: 0 };
+    }
+}
+
+function openBudgetModal() {
+    openModal('budget');
+
+    const now = new Date();
+    const monthStr = now.toISOString().slice(0, 7);
+
+    document.getElementById('budget-month').value = monthStr;
+    document.getElementById('budget-google').value = currentBudgets.google || '';
+    document.getElementById('budget-meta').value = currentBudgets.meta || '';
+
+    updateBudgetTotalDisplay();
+
+    // Attach listener for auto-calc
+    document.getElementById('budget-google').oninput = updateBudgetTotalDisplay;
+    document.getElementById('budget-meta').oninput = updateBudgetTotalDisplay;
+}
+
+function updateBudgetTotalDisplay() {
+    const g = parseFloat(document.getElementById('budget-google').value) || 0;
+    const m = parseFloat(document.getElementById('budget-meta').value) || 0;
+    document.getElementById('budget-total-display').textContent = formatCurrency(g + m);
+}
+
+async function saveBudgets() {
+    const month = document.getElementById('budget-month').value;
+    const google = parseFloat(document.getElementById('budget-google').value) || 0;
+    const meta = parseFloat(document.getElementById('budget-meta').value) || 0;
+
+    const btn = document.getElementById('budget-submit');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i data-lucide="loader" class="animate-spin w-4 h-4"></i> Guardando...';
+
+    const { error } = await db.budgets.upsert({
+        month: month,
+        google_budget: google,
+        meta_budget: meta
+    });
+
+    btn.innerHTML = originalText;
+    lucide.createIcons();
+
+    if (error) {
+        showToast('Error al guardar presupuesto', 'error');
+        console.error(error);
+        return;
+    }
+
+    showToast('Presupuesto actualizado', 'success');
+    closeModal('budget');
+
+    // Refresh
+    await loadBudgets();
+    renderBudgetPacing();
+}
+
+
