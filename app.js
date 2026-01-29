@@ -1113,32 +1113,86 @@ async function loadInputs() {
     }
 
     grid.innerHTML = data.map(input => `
-        <div class="input-card" data-id="${input.id}">
-            <div class="input-card-header">
-                <div class="input-card-icon ${typeColors[input.type] || ''}">
-                    <i data-lucide="${typeIcons[input.type] || 'file'}" class="card-icon"></i>
-                </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span class="priority-badge ${input.priority}">${input.priority}</span>
-                    <span class="input-card-badge ${input.status}">${getStatusLabel(input.status)}</span>
-                </div>
-            </div>
-            <h3 class="input-card-title">${input.title}</h3>
-            <p class="input-card-description">${input.description || 'Sin descripción'}</p>
+        <div class="ticket-card glass-panel p-5 rounded-xl mb-4 border-l-4 ${getPriorityBorderColor(input.priority)} relative transition-all hover:scale-[1.005]">
             
-            <div style="margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">
-                <i data-lucide="user" style="width: 14px; height: 14px;"></i>
-                <span>${getProfileName(input.assigned_to)}</span>
+            <!-- Header: Context & Meta -->
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <h3 class="text-lg font-bold text-white mb-1">${input.title}</h3>
+                    <div class="flex gap-2 text-xs">
+                        <span class="px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-300 border border-slate-600/30">#${input.type || 'General'}</span>
+                        ${getPriorityBadge(input.priority)}
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs text-slate-400 mb-1">Fecha Límite</div>
+                    <div class="text-sm font-medium text-white flex items-center gap-1 justify-end">
+                        <i data-lucide="calendar" class="w-3 h-3"></i> 
+                        ${input.due_date ? new Date(input.due_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }) : 'Sin fecha'}
+                    </div>
+                </div>
             </div>
 
-            <div style="display: flex; gap: 0.5rem; margin-top: auto; padding-top: 1rem;">
-                <button class="btn-secondary" style="flex: 1;" onclick="toggleInputStatus('${input.id}', '${input.status}')">
-                    <i data-lucide="${input.status === 'done' ? 'rotate-ccw' : 'check'}" class="btn-icon"></i>
-                    ${input.status === 'done' ? 'Reabrir' : 'Completar'}
-                </button>
-                <button class="btn-secondary" onclick="editInput('${input.id}')">
-                    <i data-lucide="edit-3" class="btn-icon"></i>
-                </button>
+            <!-- Body: The Request (Message Bubble Left) -->
+            <div class="bg-slate-800/50 p-4 rounded-lg rounded-tl-none border border-white/5 mb-4 relative ml-2">
+                <div class="absolute -left-2 top-0 w-0 h-0 border-t-[10px] border-t-slate-800/50 border-l-[10px] border-l-transparent"></div>
+                <div class="text-xs text-slate-400 mb-1 flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3"></i> Marketing Team
+                </div>
+                <p class="text-sm text-slate-200 leading-relaxed font-light">
+                    ${input.description || 'Sin descripción detallada.'}
+                </p>
+            </div>
+
+            ${input.response_text ? `
+            <!-- Divider (If Answered) -->
+            <div class="flex items-center gap-2 my-4 opacity-30">
+                <div class="h-px bg-white flex-1"></div>
+                <span class="text-xs text-white">Respuesta</span>
+                <div class="h-px bg-white flex-1"></div>
+            </div>
+
+            <!-- Body: The Response (Message Bubble Right) -->
+            <div class="bg-indigo-600/20 p-4 rounded-lg rounded-tr-none border border-indigo-500/20 mb-4 relative mr-2 ml-auto max-w-[90%]">
+                <div class="text-xs text-indigo-300 mb-1 flex items-center justify-end gap-1">
+                    Comercial Team <i data-lucide="check-circle" class="w-3 h-3"></i>
+                </div>
+                <p class="text-sm text-white leading-relaxed text-right font-light">
+                    ${input.response_text}
+                </p>
+            </div>
+            ` : ''}
+
+            <!-- Footer: Actions -->
+            <div class="flex justify-between items-center pt-3 border-t border-white/5">
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-[10px] font-bold text-white">
+                        ${loadInputs.getProfileBadge(input.assigned_to)}
+                    </div>
+                    <span class="text-xs text-slate-400">Asignado a ${loadInputs.getProfileName(input.assigned_to)}</span>
+                </div>
+                
+                <div class="flex gap-2">
+                    <!-- Status Toggle / Reopen -->
+                    <button class="p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white" 
+                            onclick="toggleInputStatus('${input.id}', '${input.status}')" title="${input.status === 'done' ? 'Reabrir Ticket' : 'Marcar Completado'}">
+                        <i data-lucide="${input.status === 'done' ? 'rotate-ccw' : 'check-square'}" class="w-4 h-4"></i>
+                    </button>
+
+                    <!-- Edit -->
+                     <button class="p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white" 
+                            onclick="editInput('${input.id}')" title="Editar Detalles">
+                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    </button>
+                    
+                    ${!input.response_text ? `
+                    <!-- Primary Action: Reply -->
+                    <button onclick="openResponseModal('${input.id}')" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-indigo-500/20 group">
+                        <i data-lucide="message-square-plus" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+                        Responder
+                    </button>
+                    ` : ''}
+                </div>
             </div>
         </div>
     `).join('');
@@ -2092,6 +2146,84 @@ async function editContent(id) {
         miniCalMonth = new Date(content.scheduled_date);
         selectMiniCalDay(content.scheduled_date, false);
     }
+}
+
+
+// ===== Ticket System Logic =====
+
+function openResponseModal(id) {
+    const input = teamInputs.find(i => i.id === id);
+    if (!input) return;
+
+    // Set Context
+    document.getElementById('response-input-id').value = id;
+    document.getElementById('response-context-text').textContent = `"${input.description || input.title}"`;
+    document.getElementById('response-text').value = ''; // Reset
+
+    const modal = document.getElementById('modal-response');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex'; // Ensure flex layout
+}
+
+function closeResponseModal() {
+    closeModal('response');
+}
+
+async function saveResponse() {
+    const id = document.getElementById('response-input-id').value;
+    const text = document.getElementById('response-text').value;
+
+    if (!text.trim()) {
+        showToast('Debes escribir una respuesta', 'error');
+        return;
+    }
+
+    const submitBtn = document.querySelector('#response-form button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i data-lucide="loader" class="animate-spin w-4 h-4"></i> Enviando...';
+    lucide.createIcons();
+
+    // Optimistic Update? No, let's wait for DB.
+    // We update 'response_text' AND 'status' -> 'done'
+    const { error } = await db.inputs.update(id, {
+        response_text: text,
+        status: 'done'
+    });
+
+    if (error) {
+        console.error("Save Response Error:", error);
+        showToast('Error al guardar respuesta', 'error');
+        submitBtn.innerHTML = originalBtnText;
+        return;
+    }
+
+    showToast('Respuesta enviada y ticket completado', 'success');
+    closeModal('response');
+    loadInputs(); // Refresh UI
+}
+
+// Hook up the form submission
+document.addEventListener('DOMContentLoaded', () => {
+    const responseForm = document.getElementById('response-form');
+    if (responseForm) {
+        responseForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveResponse();
+        });
+    }
+});
+
+// Helper: Priority Colors
+function getPriorityBorderColor(priority) {
+    if (priority === 'high') return 'border-red-500';
+    if (priority === 'medium') return 'border-yellow-500';
+    return 'border-blue-500'; // low
+}
+
+function getPriorityBadge(priority) {
+    if (priority === 'high') return '<span class="px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> Alta</span>';
+    if (priority === 'medium') return '<span class="px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">Media</span>';
+    return '<span class="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">Baja</span>';
 }
 
 async function saveInput() {

@@ -1414,6 +1414,73 @@
             }, true); // Use Capture phase to ensure we catch it before anything else stops it
         });
     </script>
+    <!-- Response Modal -->
+    <div id="modal-response"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm modal-overlay">
+        <div
+            class="bg-[#1a1a1a] w-full max-w-lg rounded-2xl border border-white/10 shadow-2xl overflow-hidden transform transition-all scale-100 p-0">
+
+            <!-- Header -->
+            <div class="bg-slate-900/50 p-4 border-b border-white/5 flex justify-between items-center">
+                <h3 class="text-white font-bold flex items-center gap-2">
+                    <i data-lucide="message-circle" class="text-indigo-400"></i>
+                    Responder Solicitud
+                </h3>
+                <button onclick="closeModal('response')" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-6">
+                <!-- Context -->
+                <div class="bg-slate-800/50 p-3 rounded-lg border border-white/5 mb-4">
+                    <div class="text-xs text-slate-500 uppercase font-bold mb-1">Solicitud Original</div>
+                    <p class="text-sm text-slate-300 italic" id="response-context-text">
+                        "..."
+                    </p>
+                </div>
+
+                <form id="response-form">
+                    <input type="hidden" id="response-input-id">
+
+                    <div class="form-group mb-6">
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Tu Respuesta</label>
+                        <textarea id="response-text" rows="4"
+                            class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none"
+                            placeholder="Escribe la información solicitada o pega los links aquí..."
+                            required></textarea>
+                    </div>
+
+                    <!-- Footer Actions -->
+                    <div class="flex gap-3 pt-2">
+                        <button type="button" onclick="closeModal('response')"
+                            class="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold rounded-xl transition-all border border-white/5">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                            class="flex-[2] px-4 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex justify-center items-center gap-2">
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                            Enviar & Completar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inline script to handle modal detail clicks (Legacy support, maybe refactor later)
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.addEventListener('click', (e) => {
+                const trigger = e.target.closest('[onclick^="openDetailModal"]');
+                if (trigger) {
+                    // Logic handled in app.js OpenDetailModal
+                    // This listener is a failsafe if onclick attributes are blocked (CSP)
+                }
+            }, true);
+        });
+    </script>
 </body>
 
 </html>
