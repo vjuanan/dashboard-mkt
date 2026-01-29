@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPN Marketing Ops Center</title>
+    <meta name="description"
+        content="Centro de operaciones de marketing EPN - Gestión unificada de Ads, Content e Inputs">
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Modern Hover Effects -->
+    <style>
+        .kpi-card-lg {
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            cursor: pointer;
+            /* Explicit clickability */
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        /* Hover State: Elevator Lift + Colored Glow */
+        .kpi-card-lg:hover,
+        .kpi-card-lg.hover-state {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Context-Aware Glows using :has() */
+        .kpi-card-lg:has(.blue):hover,
+        .kpi-card-lg:has(.blue).hover-state {
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 15px 30px -10px rgba(59, 130, 246, 0.25);
+        }
+
+        .kpi-card-lg:has(.purple):hover,
+        .kpi-card-lg:has(.purple).hover-state {
+            border-color: rgba(139, 92, 246, 0.5);
+            box-shadow: 0 15px 30px -10px rgba(139, 92, 246, 0.25);
+        }
+
+        .kpi-card-lg:has(.green):hover,
+        .kpi-card-lg:has(.green).hover-state {
+            border-color: rgba(16, 185, 129, 0.5);
+            box-shadow: 0 15px 30px -10px rgba(16, 185, 129, 0.25);
+        }
+
+        .kpi-card-lg:has(.orange):hover,
+        .kpi-card-lg:has(.orange).hover-state {
+            border-color: rgba(245, 158, 11, 0.5);
+            box-shadow: 0 15px 30px -10px rgba(245, 158, 11, 0.25);
+        }
+
+        /* Subtle "Click me" gradient overlay on hover */
+        .kpi-card-lg::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .kpi-card-lg:hover::after,
+        .kpi-card-lg.hover-state::after {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Header - Glassmorphism Sticky with Consolidated Actions -->
+    <header id="main-header" class="header">
+        <div class="header-content">
+            <!-- Logo -->
+            <div class="header-logo">
+                <span class="logo-text">EPN</span>
+                <span class="logo-divider"></span>
+                <span class="logo-subtitle">Marketing Ops</span>
+            </div>
+
+            <!-- Navigation Tabs - Pill Style -->
+            <!-- Navigation Tabs - Pill Style -->
+            <nav class="header-nav">
+                <!-- ... Existing tabs ... -->
+                <button class="nav-tab active" data-view="unified">
+                    <i data-lucide="layout-dashboard" class="nav-icon"></i>
+                    Vista Unificada
+                </button>
+                <button class="nav-tab" data-view="ads">
+                    <i data-lucide="megaphone" class="nav-icon"></i>
+                    Ads
+                </button>
+                <button class="nav-tab" data-view="content">
+                    <i data-lucide="calendar" class="nav-icon"></i>
+                    Content
+                </button>
+                <button class="nav-tab" data-view="inputs">
+                    <i data-lucide="file-input" class="nav-icon"></i>
+                    Inputs
+                </button>
+                <button class="nav-tab" data-view="team">
+                    <i data-lucide="users" class="nav-icon"></i>
+                    Team
+                </button>
+            </nav>
+
+            <!-- Date Range Picker Trigger (New) -->
+            <div class="date-range-trigger" id="date-range-trigger">
+                <i data-lucide="calendar-days" class="trigger-icon"></i>
+                <span class="trigger-text" id="date-range-label">Este Mes</span>
+                <i data-lucide="chevron-down" class="trigger-chevron"></i>
+            </div>
+
+            <!-- End of Header Content -->
+
+            <!-- Right Actions - Now includes primary action button -->
+            <div class="header-actions">
+                <!-- Dynamic Action Button (changes based on active view) -->
+                <button class="header-action-btn" id="header-primary-action">
+                    <i data-lucide="plus" class="action-btn-icon"></i>
+                    <span class="action-btn-text" id="action-btn-text">Nuevo</span>
+                </button>
+                <button class="action-btn notification-btn">
+                    <i data-lucide="bell" class="action-icon"></i>
+                    <span class="notification-badge">3</span>
+                </button>
+                <div class="avatar">
+                    <span class="avatar-initials">JA</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <!-- Unified View: Command Center -->
+        <section id="view-unified" class="view active">
+            <!-- 1. Global Scoreboard (Top) -->
+            <div class="command-scoreboard">
+                <div class="kpi-card-lg">
+                    <div class="kpi-lg-icon blue"><i data-lucide="dollar-sign"></i></div>
+                    <div class="kpi-lg-content">
+                        <span class="kpi-lg-label">Inversión Total</span>
+                        <span class="kpi-lg-value" id="global-spend">$0</span>
+                        <span class="kpi-lg-trend positive" id="global-spend-trend">+10% vs mes anterior</span>
+                    </div>
+                </div>
+                <div class="kpi-card-lg">
+                    <div class="kpi-lg-icon purple"><i data-lucide="eye"></i></div>
+                    <div class="kpi-lg-content">
+                        <span class="kpi-lg-label">Impresiones</span>
+                        <span class="kpi-lg-value" id="global-impressions">0</span>
+                        <span class="kpi-lg-trend positive">+5% vs mes anterior</span>
+                    </div>
+                </div>
+                <div class="kpi-card-lg">
+                    <div class="kpi-lg-icon green"><i data-lucide="mouse-pointer-click"></i></div>
+                    <div class="kpi-lg-content">
+                        <span class="kpi-lg-label">Clics</span>
+                        <span class="kpi-lg-value" id="global-clicks">0</span>
+                        <span class="kpi-lg-trend neutral">0% vs mes anterior</span>
+                    </div>
+                </div>
+                <div class="kpi-card-lg">
+                    <div class="kpi-lg-icon orange"><i data-lucide="percent"></i></div>
+                    <div class="kpi-lg-content">
+                        <span class="kpi-lg-label">CTR Promedio</span>
+                        <span class="kpi-lg-value" id="global-ctr">0.00%</span>
+                        <span class="kpi-lg-trend negative">-2% vs mes anterior</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Command Grid (Timeline + Radar) -->
+            <div class="command-grid">
+
+                <!-- Left: The Timeline Feed (60%) -->
+                <div class="command-column main-feed">
+                    <div class="section-header">
+                        <h3><i data-lucide="calendar-clock"></i> Tu Agenda Operativa</h3>
+                        <span class="badge-pill">Próximos 7 días</span>
+                    </div>
+
+                    <div class="timeline-feed" id="timeline-feed">
+                        <!-- Populated by JS -->
+                        <div class="timeline-day-group">
+                            <h4 class="timeline-date">HOY</h4>
+                            <div class="timeline-empty-state">Cargando eventos...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Action Radar (40%) -->
+                <div class="command-column action-radar">
+
+                    <!-- Block A: Bottlenecks (Inputs) -->
+                    <div class="radar-block">
+                        <div class="section-header">
+                            <h3><i data-lucide="alert-circle" class="text-red"></i> Cuellos de Botella</h3>
+                        </div>
+                        <div class="urgent-inputs-list" id="urgent-inputs-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Block B: Top Spenders (Ads) -->
+                    <div class="radar-block">
+                        <div class="section-header">
+                            <h3><i data-lucide="trending-up" class="text-blue"></i> Top Spenders (24h)</h3>
+                        </div>
+                        <div class="top-spenders-table" id="top-spenders-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Ads View -->
+        <section id="view-ads" class="view">
+            <!-- Ads Controls Header: KPIs + Advanced Filters -->
+            <div class="ads-controls-header">
+                <!-- 1. KPI Scorecards (Filtered Summary) -->
+                <div class="ads-kpi-summary">
+                    <div class="kpi-card">
+                        <div class="kpi-icon-wrapper blue"><i data-lucide="dollar-sign"></i></div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Inversión Total</span>
+                            <span class="kpi-value-lg" id="summary-spend">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon-wrapper purple"><i data-lucide="eye"></i></div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Impresiones</span>
+                            <span class="kpi-value-lg" id="summary-impressions">0</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon-wrapper green"><i data-lucide="mouse-pointer-click"></i></div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Clics</span>
+                            <span class="kpi-value-lg" id="summary-clicks">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Control Bar (Filters & Search) -->
+                <div class="ads-control-bar">
+                    <div class="control-left">
+                        <!-- Search -->
+                        <div class="search-container enhanced">
+                            <i data-lucide="search" class="search-icon"></i>
+                            <input type="text" class="search-input" id="ads-search" placeholder="Buscar campaña...">
+                        </div>
+
+                        <!-- Platform Select -->
+                        <div class="select-wrapper">
+                            <select class="filter-select" id="ads-platform-filter">
+                                <option value="">Todas las plataformas</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="control-right">
+                        <!-- Active Toggle -->
+                        <div class="toggle-control">
+                            <label class="switch-sm">
+                                <input type="checkbox" id="ads-show-active" checked>
+                                <span class="slider round"></span>
+                            </label>
+                            <span class="toggle-label">Solo Activas</span>
+                        </div>
+
+                        <!-- Refresh/Sync (Restyled: Ghost Button) -->
+                        <button
+                            onclick="loadAdsTable(true); this.querySelector('i').classList.add('spin-once'); setTimeout(() => this.querySelector('i').classList.remove('spin-once'), 1000)"
+                            title="Sincronizar ahora"
+                            style="background: transparent; border: none; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: #64748b;">
+                            <i data-lucide="refresh-cw" style="width: 18px; height: 18px;"></i>
+                        </button>
+                        <style>
+                            @keyframes spin-once {
+                                0% {
+                                    transform: rotate(0deg);
+                                }
+
+                                100% {
+                                    transform: rotate(360deg);
+                                }
+                            }
+
+                            .spin-once {
+                                animation: spin-once 1s ease-in-out;
+                            }
+
+                            button[title="Sincronizar ahora"]:hover {
+                                background-color: #f1f5f9 !important;
+                                color: #0f172a !important;
+                            }
+                        </style>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ads Table - Immediately below control bar -->
+            <div class="table-container full-height" id="ads-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th data-sort="name" onclick="handleSort('name')" class="sortable-th">Campaña</th>
+                            <th data-sort="platform" onclick="handleSort('platform')" class="sortable-th">Plataforma
+                            </th>
+                            <th data-sort="status" onclick="handleSort('status')" class="sortable-th">Estado</th>
+                            <th data-sort="impressions" onclick="handleSort('impressions')" class="sortable-th">
+                                Impresiones</th>
+                            <th data-sort="clicks" onclick="handleSort('clicks')" class="sortable-th">Clicks</th>
+                            <th data-sort="ctr" onclick="handleSort('ctr')" class="sortable-th">CTR</th>
+                            <th data-sort="spend" onclick="handleSort('spend')" class="sortable-th">Gasto</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="ads-table-body">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+                <!-- Empty State -->
+                <div class="empty-state hidden" id="ads-empty">
+                    <i data-lucide="megaphone" class="empty-icon"></i>
+                    <h3>No hay campañas</h3>
+                    <p>Crea tu primera campaña publicitaria</p>
+                    <button class="btn-primary" onclick="openModal('campaign')">
+                        <i data-lucide="plus" class="btn-icon"></i>
+                        Nueva Campaña
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Content View (Calendar + Kanban) -->
+        <section id="view-content" class="view view-calendar">
+            <!-- Control Bar with View Switcher -->
+            <div class="content-control-bar">
+                <!-- View Switcher -->
+                <div class="view-switcher" id="content-view-switcher">
+                    <button class="view-switch-btn active" data-content-view="calendar">
+                        <i data-lucide="calendar" class="switch-icon"></i>
+                        Calendario
+                    </button>
+                    <button class="view-switch-btn" data-content-view="kanban">
+                        <i data-lucide="kanban" class="switch-icon"></i>
+                        Tablero
+                    </button>
+                </div>
+
+                <!-- Calendar Navigation (visible in calendar mode) -->
+                <div class="calendar-nav" id="calendar-nav">
+                    <button class="calendar-nav-btn" id="prev-month">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <span class="calendar-month" id="calendar-month-label">Enero 2026</span>
+                    <button class="calendar-nav-btn" id="next-month">
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                    <button class="btn-today" id="btn-today">Hoy</button>
+                </div>
+
+                <!-- Kanban Filters (visible in kanban mode) -->
+                <div class="kanban-filters hidden" id="kanban-filters">
+                    <select class="filter-select" id="kanban-channel-filter">
+                        <option value="">Canal</option>
+                        <option value="Instagram">Instagram</option>
+                        <option value="TikTok">TikTok</option>
+                        <option value="YouTube">YouTube</option>
+                        <option value="Email">Email</option>
+                    </select>
+                    <select class="filter-select" id="kanban-assignee-filter">
+                        <option value="">Responsable</option>
+                        <option value="Meli">Meli</option>
+                        <option value="Agus">Agus</option>
+                        <option value="Juandi">Juandi</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Calendar View -->
+            <div class="content-view-panel" id="content-calendar-panel">
+                <div class="calendar-container full-viewport">
+                    <div class="calendar-header">
+                        <span class="calendar-day-header">Dom</span>
+                        <span class="calendar-day-header">Lun</span>
+                        <span class="calendar-day-header">Mar</span>
+                        <span class="calendar-day-header">Mié</span>
+                        <span class="calendar-day-header">Jue</span>
+                        <span class="calendar-day-header">Vie</span>
+                        <span class="calendar-day-header">Sáb</span>
+                    </div>
+                    <div class="calendar-grid full-height" id="calendar-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kanban Board View -->
+            <div class="content-view-panel hidden" id="content-kanban-panel">
+                <div class="kanban-board" id="kanban-board">
+                    <div class="kanban-column" data-stage="idea">
+                        <div class="kanban-column-header">
+                            <span class="column-title">💡 Ideas</span>
+                            <span class="column-count" id="count-idea">0</span>
+                        </div>
+                        <div class="kanban-cards" id="kanban-idea"></div>
+                    </div>
+                    <div class="kanban-column" data-stage="scripting">
+                        <div class="kanban-column-header">
+                            <span class="column-title">📝 Guion</span>
+                            <span class="column-count" id="count-scripting">0</span>
+                        </div>
+                        <div class="kanban-cards" id="kanban-scripting"></div>
+                    </div>
+                    <div class="kanban-column" data-stage="production">
+                        <div class="kanban-column-header">
+                            <span class="column-title">🎬 Producción</span>
+                            <span class="column-count" id="count-production">0</span>
+                        </div>
+                        <div class="kanban-cards" id="kanban-production"></div>
+                    </div>
+                    <div class="kanban-column" data-stage="editing">
+                        <div class="kanban-column-header">
+                            <span class="column-title">✂️ Edición</span>
+                            <span class="column-count" id="count-editing">0</span>
+                        </div>
+                        <div class="kanban-cards" id="kanban-editing"></div>
+                    </div>
+                    <div class="kanban-column" data-stage="review">
+                        <div class="kanban-column-header">
+                            <span class="column-title">👀 Revisión</span>
+                            <span class="column-count" id="count-review">0</span>
+                        </div>
+                        <div class="kanban-cards" id="kanban-review"></div>
+                    </div>
+                    <div class="kanban-column" data-stage="scheduled">
+                        <div class="kanban-column-header">
+                            <span class="column-title">✅ Programado</span>
+                            <span class="column-count" id="count-scheduled">0</span>
+                        </div>
+                        <div class="kanban-cards" id="kanban-scheduled"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Inputs View - No title, cards start immediately -->
+        <section id="view-inputs" class="view">
+            <!-- Input Cards Grid - Starts immediately -->
+            <div class="inputs-grid" id="inputs-grid">
+                <!-- Cards populated by JS -->
+            </div>
+            <!-- Empty State -->
+            <div class="empty-state hidden" id="inputs-empty">
+                <i data-lucide="file-input" class="empty-icon"></i>
+                <h3>No hay inputs</h3>
+                <p>Crea tu primer requerimiento</p>
+                <button class="btn-primary" onclick="openModal('input')">
+                    <i data-lucide="plus" class="btn-icon"></i>
+                    Nuevo Input
+                </button>
+            </div>
+        </section>
+
+        <!-- Team Hub Section -->
+        <section id="view-team" class="view">
+            <!-- Team Control Bar -->
+            <div class="control-bar">
+                <div class="filter-group" id="team-filter-group">
+                    <button class="filter-chip active" data-team-filter="all">Todos</button>
+                    <button class="filter-chip" data-team-filter="Roles">Roles</button>
+                    <button class="filter-chip" data-team-filter="Metodología">Metodologías</button>
+                    <button class="filter-chip" data-team-filter="Accesos">Accesos</button>
+                </div>
+                <div class="control-right">
+                    <button class="btn-primary" onclick="openModal('teamdoc')">
+                        <i data-lucide="plus" class="btn-icon"></i>
+                        Nuevo Doc
+                    </button>
+                </div>
+            </div>
+
+            <!-- Team Docs Grid -->
+            <div class="team-grid" id="team-grid">
+                <!-- Populated by JS -->
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state hidden" id="team-empty">
+                <i data-lucide="book-open" class="empty-icon"></i>
+                <h3>No hay documentos</h3>
+                <p>Crea tu primer documento o rol</p>
+                <button class="btn-primary" onclick="openModal('teamdoc')">
+                    <i data-lucide="plus" class="btn-icon"></i>
+                    Nuevo Doc
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Slide-over Panel -->
+    <div class="slide-over-overlay" id="slide-over-overlay"></div>
+    <aside class="slide-over" id="slide-over">
+        <div class="slide-over-header">
+            <h2 class="slide-over-title" id="slide-over-title">Detalles</h2>
+            <button class="slide-over-close" id="slide-over-close">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="slide-over-content" id="slide-over-content">
+            <!-- Dynamic content -->
+        </div>
+    </aside>
+
+    <!-- Modal: Create/Edit Campaign -->
+    <div class="modal-overlay hidden" id="modal-campaign">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-campaign-title">Nueva Campaña</h2>
+                <button class="modal-close" onclick="closeModal('campaign')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form class="modal-body" id="campaign-form">
+                <input type="hidden" id="campaign-id">
+
+                <!-- Required Fields Section -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i data-lucide="star" class="section-icon"></i>
+                        Información Requerida
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Nombre de la Campaña <span class="required">*</span></label>
+                        <input type="text" class="form-input" id="campaign-name" required
+                            placeholder="Ej: Lanzamiento Q1 2026">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Plataforma <span class="required">*</span></label>
+                        <select class="form-select" id="campaign-platform" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="Meta Ads">Meta Ads</option>
+                            <option value="Google Ads">Google Ads</option>
+                            <option value="LinkedIn">LinkedIn</option>
+                            <option value="TikTok">TikTok</option>
+                            <option value="Email">Email</option>
+                            <option value="Other">Otro</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Presupuesto Total <span class="required">*</span></label>
+                            <div class="input-with-prefix">
+                                <span class="input-prefix">$</span>
+                                <input type="number" class="form-input" id="campaign-budget" required
+                                    placeholder="10000" step="1" min="0">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Presupuesto Diario <span class="required">*</span></label>
+                            <div class="input-with-prefix">
+                                <span class="input-prefix">$</span>
+                                <input type="number" class="form-input" id="campaign-daily-budget" required
+                                    placeholder="500" step="1" min="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date Picker Section -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i data-lucide="calendar" class="section-icon"></i>
+                        Fecha de Inicio
+                    </div>
+
+                    <div class="mini-calendar-container" id="campaign-start-date-picker">
+                        <div class="mini-calendar-header">
+                            <button type="button" class="mini-cal-nav" onclick="navigateMiniCalendar(-1)">
+                                <i data-lucide="chevron-left"></i>
+                            </button>
+                            <span class="mini-cal-month" id="campaign-mini-cal-month-label">Enero 2026</span>
+                            <button type="button" class="mini-cal-nav" onclick="navigateMiniCalendar(1)">
+                                <i data-lucide="chevron-right"></i>
+                            </button>
+                        </div>
+                        <div class="mini-calendar-weekdays">
+                            <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
+                        </div>
+                        <div class="mini-calendar-days" id="campaign-mini-cal-days">
+                            <!-- Generated by JS -->
+                        </div>
+                        <input type="hidden" id="campaign-start-date">
+                        <div class="selected-date-display" id="selected-date-display">
+                            <i data-lucide="calendar-check" class="date-icon"></i>
+                            <span id="selected-date-text">Selecciona una fecha</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Optional Fields Section -->
+                <details class="form-section-collapsible">
+                    <summary class="form-section-toggle">
+                        <i data-lucide="settings" class="section-icon"></i>
+                        Campos Opcionales
+                        <i data-lucide="chevron-down" class="toggle-icon"></i>
+                    </summary>
+                    <div class="form-section-content">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Estado</label>
+                                <select class="form-select" id="campaign-status">
+                                    <option value="draft">Borrador</option>
+                                    <option value="active">Activa</option>
+                                    <option value="paused">Pausada</option>
+                                    <option value="completed">Completada</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Fecha Fin</label>
+                                <input type="date" class="form-input" id="campaign-end-date">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Gasto Actual</label>
+                                <div class="input-with-prefix">
+                                    <span class="input-prefix">$</span>
+                                    <input type="number" class="form-input" id="campaign-spend" placeholder="0"
+                                        step="1">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Impresiones</label>
+                                <input type="number" class="form-input" id="campaign-impressions" placeholder="0">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Clicks</label>
+                                <input type="number" class="form-input" id="campaign-clicks" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeModal('campaign')">Cancelar</button>
+                <button type="submit" class="btn-primary" id="campaign-submit" form="campaign-form">
+                    <i data-lucide="save" class="btn-icon"></i>
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Create/Edit Content -->
+    <div class="modal-overlay hidden" id="modal-content">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-content-title">Nuevo Contenido</h2>
+                <button class="modal-close" onclick="closeModal('content')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form class="modal-body" id="content-form">
+                <input type="hidden" id="content-id">
+
+                <!-- Required Fields Section -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i data-lucide="star" class="section-icon"></i>
+                        Información Requerida
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Título <span class="required">*</span></label>
+                        <input type="text" class="form-input" id="content-title" required
+                            placeholder="Ej: Post Instagram - Lanzamiento">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Canal <span class="required">*</span></label>
+                            <select class="form-select" id="content-channel" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="Instagram">Instagram</option>
+                                <option value="TikTok">TikTok</option>
+                                <option value="LinkedIn">LinkedIn</option>
+                                <option value="Twitter">Twitter</option>
+                                <option value="Email">Email</option>
+                                <option value="Blog">Blog</option>
+                                <option value="YouTube">YouTube</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Formato <span class="required">*</span></label>
+                            <select class="form-select" id="content-format" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="Post">Post</option>
+                                <option value="Reel">Reel</option>
+                                <option value="Story">Story</option>
+                                <option value="Carousel">Carousel</option>
+                                <option value="Video">Video</option>
+                                <option value="Article">Article</option>
+                                <option value="Newsletter">Newsletter</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date Picker Section -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i data-lucide="calendar" class="section-icon"></i>
+                        Fecha Programada
+                    </div>
+
+                    <div class="mini-calendar-container" id="content-date-picker">
+                        <div class="mini-calendar-header">
+                            <button type="button" class="mini-cal-nav" onclick="navigateMiniCalendar(-1)">
+                                <i data-lucide="chevron-left"></i>
+                            </button>
+                            <span class="mini-cal-month" id="content-mini-cal-month-label">Enero 2026</span>
+                            <button type="button" class="mini-cal-nav" onclick="navigateMiniCalendar(1)">
+                                <i data-lucide="chevron-right"></i>
+                            </button>
+                        </div>
+                        <div class="mini-calendar-weekdays">
+                            <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
+                        </div>
+                        <div class="mini-calendar-days" id="content-mini-cal-days">
+                            <!-- Generated by JS -->
+                        </div>
+                        <input type="hidden" id="content-scheduled-date">
+                        <div class="selected-date-display" id="content-selected-date-display">
+                            <i data-lucide="calendar-check" class="date-icon"></i>
+                            <span id="content-selected-date-text">Selecciona una fecha</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Optional Fields Section -->
+                <details class="form-section-collapsible">
+                    <summary class="form-section-toggle">
+                        <i data-lucide="settings" class="section-icon"></i>
+                        Campos Producción
+                        <i data-lucide="chevron-down" class="toggle-icon"></i>
+                    </summary>
+                    <div class="form-section-content">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Etapa de Producción</label>
+                                <select class="form-select" id="content-stage">
+                                    <option value="idea">💡 Idea</option>
+                                    <option value="scripting">📝 Guion</option>
+                                    <option value="production">🎬 Producción</option>
+                                    <option value="editing">✂️ Edición</option>
+                                    <option value="review">👀 Revisión</option>
+                                    <option value="scheduled">✅ Programado</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Responsable</label>
+                                <select class="form-select" id="content-assigned">
+                                    <option value="">Sin asignar</option>
+                                    <option value="Meli">Meli</option>
+                                    <option value="Agus">Agus</option>
+                                    <option value="Juandi">Juandi</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Ángulo de Estrategia</label>
+                            <select class="form-select" id="content-strategy">
+                                <option value="">Seleccionar...</option>
+                                <option value="Educativo">📚 Educativo</option>
+                                <option value="Venta">💰 Venta Directa</option>
+                                <option value="Lifestyle">✨ Lifestyle</option>
+                                <option value="Prueba Social">👥 Prueba Social</option>
+                                <option value="Behind Scenes">🎬 Behind the Scenes</option>
+                                <option value="Trending">🔥 Trending/Viral</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Link de Assets / Guion</label>
+                            <input type="url" class="form-input" id="content-assets"
+                                placeholder="https://drive.google.com/...">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Copy / Texto</label>
+                            <textarea class="form-textarea" id="content-copy"
+                                placeholder="Texto del contenido..."></textarea>
+                        </div>
+                    </div>
+                </details>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeModal('content')">Cancelar</button>
+                <button type="submit" class="btn-primary" id="content-submit" form="content-form">
+                    <i data-lucide="save" class="btn-icon"></i>
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Create/Edit Input -->
+    <div class="modal-overlay hidden" id="modal-input">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-input-title">Nuevo Input</h2>
+                <button class="modal-close" onclick="closeModal('input')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form class="modal-body" id="input-form">
+                <input type="hidden" id="input-id">
+
+                <!-- Required Fields Section -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i data-lucide="star" class="section-icon"></i>
+                        Información Requerida
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Título <span class="required">*</span></label>
+                        <input type="text" class="form-input" id="input-title" required placeholder="Ej: Brief Q2 2026">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Tipo <span class="required">*</span></label>
+                            <select class="form-select" id="input-type" required>
+                                <option value="Brief">Brief de Campaña</option>
+                                <option value="Request">Request de Contenido</option>
+                                <option value="Report">Reporte</option>
+                                <option value="Audience">Audiencia Target</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Prioridad <span class="required">*</span></label>
+                            <select class="form-select" id="input-priority" required>
+                                <option value="medium">Media</option>
+                                <option value="high">Alta</option>
+                                <option value="low">Baja</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-group">
+                        <label class="form-label">Asignar Responsable <span class="required">*</span></label>
+                        <select id="input-assigned" class="form-input">
+                            <option value="">Seleccionar miembro...</option>
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Date Picker Section -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i data-lucide="calendar"></i>
+                        FECHA LÍMITE
+                    </div>
+
+                    <div class="mini-calendar-container" id="input-date-picker">
+                        <div class="mini-calendar-header">
+                            <button type="button" class="mini-cal-nav" onclick="navigateMiniCalendar(-1)">
+                                <i data-lucide="chevron-left"></i>
+                            </button>
+                            <span class="mini-cal-month" id="input-mini-cal-month-label">Enero 2026</span>
+                            <button type="button" class="mini-cal-nav" onclick="navigateMiniCalendar(1)">
+                                <i data-lucide="chevron-right"></i>
+                            </button>
+                        </div>
+                        <div class="mini-calendar-weekdays">
+                            <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
+                        </div>
+                        <div class="mini-calendar-days" id="input-mini-cal-days">
+                            <!-- Generated by JS -->
+                        </div>
+                        <input type="hidden" id="input-due-date">
+                        <div class="selected-date-display" id="input-selected-date-display">
+                            <i data-lucide="calendar-check" class="date-icon"></i>
+                            <span id="input-selected-date-text">Selecciona una fecha</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Optional Fields Section -->
+                <details class="form-section-collapsible">
+                    <summary class="form-section-toggle">
+                        <i data-lucide="settings" class="section-icon"></i>
+                        Campos Opcionales
+                        <i data-lucide="chevron-down" class="toggle-icon"></i>
+                    </summary>
+                    <div class="form-section-content">
+                        <div class="form-group">
+                            <label class="form-label">Solicitante</label>
+                            <input type="text" class="form-input" id="input-requester" placeholder="Nombre">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Descripción</label>
+                            <textarea class="form-textarea" id="input-description" rows="3"
+                                placeholder="Detalles del requerimiento..."></textarea>
+                        </div>
+                    </div>
+                </details>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeModal('input')">Cancelar</button>
+                <button type="submit" class="btn-primary" id="input-submit" form="input-form">
+                    <i data-lucide="save" class="btn-icon"></i>
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Create/Edit Team Doc -->
+    <div class="modal-overlay hidden" id="modal-teamdoc">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-teamdoc-title">Nuevo Documento</h2>
+                <button class="modal-close" onclick="closeModal('teamdoc')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form class="modal-body" id="teamdoc-form">
+                <input type="hidden" id="teamdoc-id">
+
+                <div class="form-group">
+                    <label class="form-label">Título <span class="required">*</span></label>
+                    <input type="text" class="form-input" id="teamdoc-title" required
+                        placeholder="Ej: Protocolo de Subida de Reels">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Categoría <span class="required">*</span></label>
+                    <select class="form-select" id="teamdoc-category" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="Roles">👤 Roles del Equipo</option>
+                        <option value="Metodología">📋 Metodología / SOP</option>
+                        <option value="Accesos">🔑 Accesos y Credenciales</option>
+                        <option value="Otro">📄 Otro</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Contenido</label>
+                    <textarea class="form-textarea" id="teamdoc-content" rows="10"
+                        placeholder="Escribe el contenido del documento...&#10;&#10;Puedes usar formato Markdown:&#10;- Listas con guiones&#10;- **Negrita** con asteriscos&#10;- Saltos de línea"></textarea>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeModal('teamdoc')">Cancelar</button>
+                <button type="submit" class="btn-primary" id="teamdoc-submit" form="teamdoc-form">
+                    <i data-lucide="save" class="btn-icon"></i>
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal (Premium Glass Design) -->
+    <div id="detail-modal" class="modal-overlay hidden"
+        style="background: rgba(0,0,0,0.25); backdrop-filter: blur(4px); transition: opacity 0.3s ease; opacity: 0; pointer-events: none;">
+        <div class="glass-panel" style="
+            width: 90%; max-width: 500px; 
+            background: rgba(255, 255, 255, 0.96); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0,0,0,0.03);
+            border-radius: 20px;
+            padding: 0;
+            transform: scale(0.96) translateY(10px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        ">
+            <!-- Header -->
+            <div
+                style="padding: 1.5rem 1.5rem 1rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.04); display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h3 id="modal-title"
+                        style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 600; margin-bottom: 0.25rem;">
+                        Total</h3>
+                    <div id="modal-total"
+                        style="font-size: 2rem; font-weight: 700; color: #0f172a; letter-spacing: -0.02em; line-height: 1;">
+                        0</div>
+                </div>
+                <button id="close-modal" style="
+                    background: rgba(0,0,0,0.03); border: none; width: 36px; height: 36px; border-radius: 50%; 
+                    display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748b;
+                    transition: background 0.2s;
+                " onmouseover="this.style.background='rgba(0,0,0,0.08)'"
+                    onmouseout="this.style.background='rgba(0,0,0,0.03)'">
+                    <i data-lucide="x" style="width: 18px;"></i>
+                </button>
+            </div>
+
+            <!-- List -->
+            <div id="modal-list" style="padding: 1rem 1.5rem 1.5rem 1.5rem; max-height: 55vh; overflow-y: auto;">
+                <!-- Content injected via JS -->
+            </div>
+
+            <!-- Footer -->
+            <div
+                style="padding: 0.75rem; text-align: center; border-top: 1px solid rgba(0,0,0,0.04); background: rgba(248, 250, 252, 0.5); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;">
+                <span style="font-size: 0.7rem; color: #94a3b8; font-weight: 500;">Datos actualizados hace un
+                    momento</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Picker Popover (Moved to Body for Stacking Context) -->
+    <div class="date-picker-popover hidden" id="date-picker-popover"
+        style="position: fixed; top: 80px; right: 280px; z-index: 9999;">
+        <div class="date-picker-container">
+            <!-- Sidebar: Presets -->
+            <div class="date-picker-sidebar">
+                <button class="date-preset" data-preset="today">Hoy</button>
+                <button class="date-preset" data-preset="yesterday">Ayer</button>
+                <button class="date-preset" data-preset="last7">Últimos 7 días</button>
+                <button class="date-preset" data-preset="last30">Últimos 30 días</button>
+                <button class="date-preset active" data-preset="thisMonth">Este Mes</button>
+                <button class="date-preset" data-preset="lastMonth">Mes Pasado</button>
+                <button class="date-preset" data-preset="lifetime">Lifetime</button>
+            </div>
+
+            <!-- Main: Calendars -->
+            <div class="date-picker-main">
+                <div class="date-picker-calendars">
+                    <!-- Left Calendar -->
+                    <div class="dp-calendar" id="dp-cal-left">
+                        <div class="dp-header">
+                            <button class="dp-nav" id="dp-prev-month"><i data-lucide="chevron-left"></i></button>
+                            <span class="dp-month-label" id="dp-label-left">Enero 2026</span>
+                        </div>
+                        <div class="dp-grid" id="dp-grid-left"></div>
+                    </div>
+                    <!-- Right Calendar -->
+                    <div class="dp-calendar" id="dp-cal-right">
+                        <div class="dp-header">
+                            <span class="dp-month-label" id="dp-label-right">Febrero 2026</span>
+                            <button class="dp-nav" id="dp-next-month"><i data-lucide="chevron-right"></i></button>
+                        </div>
+                        <div class="dp-grid" id="dp-grid-right"></div>
+                    </div>
+                </div>
+
+                <!-- Footer: Comparison & Actions -->
+                <div class="date-picker-footer">
+                    <div class="comparison-toggle-wrapper">
+                        <label class="switch">
+                            <input type="checkbox" id="comparison-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                        <span class="comparison-label">Comparar</span>
+                        <span class="comparison-range" id="comparison-range-display">vs. Periodo Anterior</span>
+                    </div>
+                    <div class="date-picker-actions">
+                        <button class="btn-ghost" id="dp-cancel">Cancelar</button>
+                        <button class="btn-primary" id="dp-apply">Aplicar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="lib/supabase.js"></script>
+    <script src="app.js"></script>
+
+    <!-- Force Date Picker Interaction -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const trigger = document.getElementById('date-range-trigger');
+            const popover = document.getElementById('date-picker-popover');
+
+            if (trigger && popover) {
+                // Ensure popover starts hidden visually but ready
+                popover.style.display = 'none';
+
+                trigger.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log("Forced Trigger Click");
+
+                    if (popover.style.display === 'none' || popover.classList.contains('hidden')) {
+                        popover.classList.remove('hidden');
+                        popover.style.display = 'block';
+                        // Re-trigger render logic if needed via global function, or just show
+                        if (typeof renderDateCalendars === 'function') renderDateCalendars();
+                    } else {
+                        popover.classList.add('hidden');
+                        popover.style.display = 'none';
+                    }
+                };
+
+                document.addEventListener('click', (e) => {
+                    if (!popover.contains(e.target) && !trigger.contains(e.target)) {
+                        popover.classList.add('hidden');
+                        popover.style.display = 'none';
+                    }
+                });
+            }
+        });
+    </script>
+
+    <!-- SAFETY SCRIPT: Force display of Real Data snapshot if app.js is blocked -->
+    <script>
+
+        function setupInlineInteractions() {
+            const mappings = [
+                { id: 'global-spend', label: 'Inversión Total', key: 'spend' },
+                { id: 'global-impressions', label: 'Impresiones', key: 'impressions' },
+                { id: 'global-clicks', label: 'Clics Totales', key: 'clicks' },
+                { id: 'global-ctr', label: 'CTR Promedio', key: 'ctr' }
+            ];
+
+            mappings.forEach(m => {
+                const el = document.getElementById(m.id);
+                if (el) {
+                    const card = el.closest('.stat-card') || el.parentElement;
+                    card.style.cursor = 'pointer';
+                    // Hover effect
+                    card.style.transition = 'transform 0.2s';
+                    card.onmouseover = () => card.style.transform = 'translateY(-2px)';
+                    card.onmouseout = () => card.style.transform = 'translateY(0)';
+
+                    card.onclick = () => openInlineModal(m);
+                }
+            });
+        }
+
+        function openInlineModal(metric) {
+            const modal = document.getElementById('detail-modal');
+            const panel = modal.querySelector('.glass-panel');
+            const list = document.getElementById('modal-list');
+            if (!modal) return;
+
+            document.getElementById('modal-title').textContent = metric.label;
+            document.getElementById('modal-total').textContent = document.getElementById(metric.id).innerText;
+
+            // Animate In
+            modal.classList.remove('hidden');
+            // Small delay for CSS transition
+            requestAnimationFrame(() => {
+                modal.style.opacity = '1';
+                modal.style.pointerEvents = 'auto';
+                panel.style.transform = 'scale(1) translateY(0)';
+            });
+
+            // DATA CALCULATION FOR BARS
+            const items = window.adsData || [];
+            // Calculate Max for bars
+            let maxVal = 0;
+            items.forEach(i => {
+                let val = metric.key === 'impressions' ? i.impressions :
+                    metric.key === 'clicks' ? i.clicks : 0;
+                if (val > maxVal) maxVal = val;
+            });
+
+            // RENDER LIST
+            if (items.length === 0) {
+                list.innerHTML = '<div style="text-align:center; padding:2rem; color:#94a3b8;">No hay datos disponibles</div>';
+            } else {
+                list.innerHTML = items.map(item => {
+                    let rawVal = metric.key === 'impressions' ? item.impressions :
+                        metric.key === 'clicks' ? item.clicks : 0;
+
+                    let fmtVal = metric.key === 'impressions' ? (item.impressions / 1000000).toFixed(1) + 'M' :
+                        metric.key === 'clicks' ? (item.clicks / 1000).toFixed(1) + 'K' : '$0';
+
+                    let percent = maxVal > 0 ? (rawVal / maxVal) * 100 : 0;
+                    if (percent < 5) percent = 5; // Min width
+
+                    const iconColor = item.platform.includes('Google') ? '#3b82f6' : '#8b5cf6';
+                    const barColor = item.platform.includes('Google') ? 'bg-blue-500' : 'bg-purple-500'; // Using tailwind classes or style
+                    const barStyleColor = item.platform.includes('Google') ? '#3b82f6' : '#8b5cf6';
+
+                    return `
+                   <div style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+                       <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                           <div style="
+                               width: 36px; height: 36px; border-radius: 10px; 
+                               background: ${iconColor}20; color: ${iconColor}; 
+                               display: flex; align-items: center; justify-content: center;
+                               font-weight: 700; font-size: 0.8rem;
+                           ">${item.platform.charAt(0)}</div>
+                           <div style="flex: 1;">
+                               <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                   <div style="font-weight: 600; color: #1e293b; font-size: 0.9rem;">${item.name}</div>
+                                   <div style="font-weight: 700; color: #0f172a;">${fmtVal}</div>
+                               </div>
+                               <!-- Progress Bar -->
+                               <div style="width: 100%; height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden;">
+                                   <div style="
+                                       width: ${percent}%; 
+                                       height: 100%; 
+                                       background: ${barStyleColor}; 
+                                       border-radius: 3px; 
+                                       transition: width 1s ease-out;
+                                   "></div>
+                               </div>
+                           </div>
+                       </div>
+                   </div>`;
+                }).join('');
+            }
+
+            // Close Logic
+            document.getElementById('close-modal').onclick = closeModal;
+            modal.onclick = (e) => {
+                if (e.target === modal) closeModal();
+            };
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('detail-modal');
+            const panel = modal.querySelector('.glass-panel');
+            modal.style.opacity = '0';
+            modal.style.pointerEvents = 'none';
+            panel.style.transform = 'scale(0.96) translateY(10px)';
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+    </script>
+
+    <!-- NUCLEAR OPTION: Guaranteed Modal Click Handler -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Attach to body for maximum capture range
+            document.body.addEventListener('click', (e) => {
+                // Look for kpi-card-lg OR stat-card OR kpi-card
+                const card = e.target.closest('.kpi-card-lg') || e.target.closest('.stat-card') || e.target.closest('.kpi-card');
+
+                // Ensure we are clicking a metric card that has an ID we care about
+                if (!card) return;
+
+                // Identify metric by checking if specific IDs exist inside the clicked card
+                let metric = null;
+                if (card.querySelector('#global-impressions') || card.id === 'global-impressions') metric = { key: 'impressions', label: 'Impresiones' };
+                else if (card.querySelector('#global-spend') || card.id === 'global-spend') metric = { key: 'spend', label: 'Inversión Total' };
+                else if (card.querySelector('#global-clicks') || card.id === 'global-clicks') metric = { key: 'clicks', label: 'Clics' };
+                else if (card.querySelector('#global-ctr') || card.id === 'global-ctr') metric = { key: 'ctr', label: 'CTR' };
+
+                if (metric) {
+                    console.log("Nuclear Click Triggered for:", metric.label);
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const modal = document.getElementById('detail-modal');
+                    const title = document.getElementById('modal-title');
+                    const total = document.getElementById('modal-total');
+                    const list = document.getElementById('modal-list');
+                    const panel = modal.querySelector('.glass-panel') || modal.querySelector('.modal-content');
+
+                    let rawData = window.adsData || [];
+
+                    // FALLBACK: Scrape Table if global data is empty but table exists
+                    if (rawData.length === 0) {
+                        const rows = document.querySelectorAll('#ads-table-body tr');
+                        if (rows.length > 0) {
+                            console.log("Scraping Table for Modal Data...");
+                            rawData = Array.from(rows).map(row => {
+                                const cells = row.querySelectorAll('td');
+                                if (cells.length < 5) return null; // Skip skeleton/empty
+
+                                // Parse Cells based on known table structure (Name, Platform, Status, Imp, Clicks, Spend...)
+                                // Name is usually in cell 0 div
+                                const name = cells[0].innerText.trim();
+                                const platform = cells[1].innerText.trim(); // "Google Ads" or icon
+                                // Imp is cell 3, Clicks 4, CTR 5, Spend 6
+                                const impStr = cells[3].innerText.replace(/,/g, '').replace('M', '000000').replace('K', '000'); // Rough parsing
+                                const clkStr = cells[4].innerText.replace(/,/g, '').replace('K', '000');
+                                const spendStr = cells[6].innerText.replace(/,/g, '').replace('$', '');
+
+                                return {
+                                    name: name,
+                                    platform: platform.includes('Google') ? 'Google Ads' : 'Meta Ads',
+                                    impressions: parseFloat(impStr) || 0,
+                                    clicks: parseFloat(clkStr) || 0,
+                                    spend: parseFloat(spendStr) || 0
+                                };
+                            }).filter(i => i);
+                        }
+                    }
+
+                    // Show Modal
+                    modal.classList.remove('hidden');
+                    // Force display style just in case
+                    modal.style.display = 'flex';
+
+                    requestAnimationFrame(() => {
+                        modal.style.opacity = '1';
+                        modal.style.pointerEvents = 'auto';
+                        if (panel) {
+                            panel.style.transform = 'scale(1)';
+                            panel.style.opacity = '1';
+                        }
+                    });
+
+                    // Set Header
+                    title.textContent = metric.label;
+
+                    // Set Total Display (read from card for consistency)
+                    const totalSpan = card.querySelector('.kpi-lg-value') || card.querySelector('.stat-value') || card.querySelector('.kpi-value');
+                    if (totalSpan) total.textContent = totalSpan.innerText;
+
+                    // Render List
+                    // Logic to prioritize Google/Meta colors
+                    const items = rawData.map(i => {
+                        let val = parseFloat(i[metric.key]) || 0;
+                        // CTR special handling
+                        if (metric.key === 'ctr') {
+                            const imp = parseFloat(i.impressions) || 0;
+                            const clk = parseFloat(i.clicks) || 0;
+                            val = imp > 0 ? (clk / imp) * 100 : 0;
+                        }
+                        return { ...i, val };
+                    }).sort((a, b) => b.val - a.val);
+
+                    const maxVal = items.length > 0 ? items[0].val : 1;
+
+                    if (items.length === 0) {
+                        list.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">No hay datos disponibles</div>';
+                    } else {
+                        list.innerHTML = items.slice(0, 100).map(item => {
+                            // if (item.val <= 0) return ''; // SHOW ALL ITEMS (Even zero) to match Table EXACTLY
+                            const isGoogle = (item.platform?.toLowerCase().includes('google'));
+                            const icon = isGoogle ? 'G' : 'M';
+                            const iconClass = isGoogle ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600';
+                            const barColor = isGoogle ? '#3b82f6' : '#a855f7';
+                            const progress = (item.val / maxVal) * 100;
+
+                            let fmtVal = item.val.toLocaleString();
+                            if (metric.key === 'ctr') fmtVal = item.val.toFixed(2) + '%';
+                            if (metric.key === 'spend') fmtVal = '$' + item.val.toLocaleString();
+
+                            return `
+                            <div class="modal-item-row" style="padding: 12px 0; border-bottom: 1px solid #f1f5f9;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+                                    <div style="display:flex; gap:10px; align-items:center;">
+                                        <div class="${iconClass}" style="width:24px; height:24px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:10px;">${icon}</div>
+                                        <div>
+                                            <div style="font-size:0.85rem; font-weight:600; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px;">${item.name}</div>
+                                            <div style="font-size:0.7rem; color:#64748b;">${item.platform}</div>
+                                        </div>
+                                    </div>
+                                    <div style="font-weight:700; font-size:0.85rem;">${fmtVal}</div>
+                                </div>
+                                 <div style="width:100%; height:4px; background:#f1f5f9; border-radius:2px; overflow:hidden;">
+                                    <div style="width:${progress}%; height:100%; background:${barColor};"></div>
+                                </div>
+                            </div>`;
+                        }).join('');
+                    }
+
+                    // Close Logic (Duplicate for safety)
+                    const closeBtn = document.getElementById('close-modal');
+                    if (closeBtn) {
+                        closeBtn.onclick = (ev) => {
+                            ev.stopPropagation();
+                            modal.classList.add('hidden');
+                            modal.style.display = 'none'; // Force hide
+                        }
+                    }
+                    modal.onclick = (ev) => {
+                        if (ev.target === modal) {
+                            modal.classList.add('hidden');
+                            modal.style.display = 'none'; // Force hide
+                        }
+                    }
+                }
+            }, true); // Use Capture phase to ensure we catch it before anything else stops it
+        });
+    </script>
+</body>
+
+</html>
