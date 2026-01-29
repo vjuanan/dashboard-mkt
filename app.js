@@ -88,6 +88,9 @@ const actionLabels = {
 
 
 
+// Budget State
+let currentBudgets = { google: 0, meta: 0, total: 0 };
+
 // ===== DOM Elements =====
 const header = document.getElementById('main-header');
 const navTabs = document.querySelectorAll('.nav-tab');
