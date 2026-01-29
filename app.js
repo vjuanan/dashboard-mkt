@@ -519,41 +519,313 @@ function renderTimelineCard(ev) {
 }
 
 async function renderActionRadar() {
-
-    const inputList = document.getElementById('urgent-inputs-list');
-    if (inputList) {
-        inputList.innerHTML = urgentInputs.map(item => `
-            <div class="radar-item">
-                <div class="radar-status-dot red"></div>
-                <div class="radar-info">
-                    <span class="radar-title">${item.title}</span>
-                    <span class="radar-sub text-red">${item.hours} • ${item.owner}</span>
-                </div>
-                <button class="btn-icon-xs"><i data-lucide="arrow-right"></i></button>
-            </div>
-        `).join('');
-    }
-
-    // Block B: Top Spenders (Real Data from adsData)
-    const spendersList = document.getElementById('top-spenders-list');
-    if (spendersList) {
-        // Sort by spend desc
-        const topAds = [...adsData].sort((a, b) => (parseFloat(b.spend) || 0) - (parseFloat(a.spend) || 0)).slice(0, 5);
-
-        spendersList.innerHTML = topAds.map(ad => `
-            <div class="radar-item">
-                <div class="platform-mini-icon">${ad.platform === 'Google Ads' ? 'G' : 'M'}</div>
-                <div class="radar-info">
-                    <span class="radar-title truncate">${ad.name}</span>
-                    <span class="radar-sub">${formatCurrency(ad.spend)}</span>
-                </div>
-                <span class="trend-mini ${Math.random() > 0.5 ? 'up' : 'down'}">
-                    <i data-lucide="${Math.random() > 0.5 ? 'trending-up' : 'trending-down'}"></i>
-                </span>
-            </div>
-        `).join('');
-    }
+    // NEW: Call all operational widget renderers
+    await Promise.all([
+        renderUpcomingLaunches(),
+        renderUrgentRequests(),
+        renderBudgetPacing(),
+        renderPlatformSplit()
+    ]);
     lucide.createIcons();
+}
+
+// ===== NEW: Operational Widget Renderers =====
+
+// Widget A: Próximos Lanzamientos (from content_calendar)
+async function renderUpcomingLaunches() {
+    const container = document.getElementById('upcoming-launches-list');
+    if (!container) return;
+
+    try {
+        // Get content with future scheduled dates, ordered by date
+        const { data: content, error } = await db.content.getAll();
+
+        if (error) throw error;
+
+        // Filter for pending/upcoming items with future dates
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const upcoming = (content || [])
+            .filter(item => {
+                if (!item.scheduled_date) return false;
+                const itemDate = new Date(item.scheduled_date);
+                // Include items scheduled for today or future
+                return itemDate >= today && item.production_stage !== 'scheduled';
+            })
+            .sort((a, b) => new Date(a.scheduled_date) - new Date(b.scheduled_date))
+            .slice(0, 3);
+
+        if (upcoming.length === 0) {
+            container.innerHTML = `
+                <div class="widget-empty-state">
+                    <i data-lucide="calendar-check"></i>
+                    <span>No hay lanzamientos pendientes</span>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = upcoming.map(item => {
+            const channel = (item.channel || '').toLowerCase();
+            const iconClass = ['instagram', 'tiktok', 'youtube', 'linkedin', 'email'].includes(channel)
+                ? channel : 'default';
+            const channelIcons = {
+                instagram: 'instagram',
+                tiktok: 'music-2',
+                youtube: 'youtube',
+                linkedin: 'linkedin',
+                email: 'mail',
+                default: 'file-text'
+            };
+            const iconName = channelIcons[channel] || channelIcons.default;
+
+            // Format date
+            const date = new Date(item.scheduled_date);
+            const formattedDate = date.toLocaleDateString('es-AR', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short'
+            });
+
+            return `
+                <div class="launch-item" onclick="openContentDetail('${item.id}')">
+                    <div class="launch-icon ${iconClass}">
+                        <i data-lucide="${iconName}"></i>
+                    </div>
+                    <div class="launch-info">
+                        <div class="launch-title">${item.title || 'Sin título'}</div>
+                        <div class="launch-date">${formattedDate}</div>
+                    </div>
+                </div>`;
+        }).join('');
+    } catch (e) {
+        console.error('Error loading upcoming launches:', e);
+        container.innerHTML = `
+            <div class="widget-empty-state">
+                <i data-lucide="alert-circle"></i>
+                <span>Error al cargar contenidos</span>
+            </div>`;
+    }
+}
+
+// Widget B: Solicitudes Urgentes (from inputs_requests)
+async function renderUrgentRequests() {
+    const container = document.getElementById('urgent-requests-list');
+    if (!container) return;
+
+    try {
+        // Get all inputs
+        const { data: inputs, error } = await db.inputs.getAll();
+
+        if (error) throw error;
+
+        // Filter for high priority and not done
+        const urgent = (inputs || [])
+            .filter(item => item.priority === 'high' && item.status !== 'done')
+            .slice(0, 3);
+
+        if (urgent.length === 0) {
+            container.innerHTML = `
+                <div class="widget-empty-state">
+                    <i data-lucide="check-circle"></i>
+                    <span>No hay solicitudes urgentes</span>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = urgent.map(item => {
+            // Get assignee name from profiles cache if available
+            let assigneeName = 'Sin asignar';
+            if (item.assigned_to && teamProfiles.length > 0) {
+                const profile = teamProfiles.find(p => p.id === item.assigned_to);
+                if (profile) assigneeName = profile.full_name;
+            } else if (item.requester_name) {
+                assigneeName = item.requester_name;
+            }
+
+            return `
+                <div class="request-item" onclick="openInputDetail('${item.id}')">
+                    <span class="priority-badge high">High</span>
+                    <div class="request-info">
+                        <div class="request-title">${item.title || 'Sin título'}</div>
+                        <div class="request-owner">${assigneeName}</div>
+                    </div>
+                </div>`;
+        }).join('');
+    } catch (e) {
+        console.error('Error loading urgent requests:', e);
+        container.innerHTML = `
+            <div class="widget-empty-state">
+                <i data-lucide="alert-circle"></i>
+                <span>Error al cargar solicitudes</span>
+            </div>`;
+    }
+}
+
+// Widget C: Budget Pacing
+async function renderBudgetPacing() {
+    const percentageEl = document.getElementById('pacing-percentage');
+    const progressFill = document.getElementById('pacing-progress-fill');
+    const idealMarker = document.getElementById('pacing-ideal-marker');
+    const spentEl = document.getElementById('pacing-spent');
+    const budgetEl = document.getElementById('pacing-budget');
+    const dayProgressEl = document.getElementById('pacing-day-progress');
+    const statusBadge = document.getElementById('pacing-status-badge');
+
+    if (!percentageEl) return;
+
+    // Calculate total spend from adsData
+    const totalSpend = (adsData || []).reduce((sum, c) => sum + (parseFloat(c.spend) || 0), 0);
+
+    // Calculate total budget from adsData
+    const totalBudget = (adsData || []).reduce((sum, c) => sum + (parseFloat(c.budget) || 0), 0);
+
+    // Use a reasonable default budget if none found
+    const effectiveBudget = totalBudget > 0 ? totalBudget : 50000; // Default 50k for demo
+
+    // Calculate percentage
+    const spendPercent = (totalSpend / effectiveBudget) * 100;
+
+    // Calculate day of month progress
+    const today = new Date();
+    const currentDay = today.getDate();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const dayPercent = (currentDay / daysInMonth) * 100;
+
+    // Determine status
+    let status = 'On Track';
+    let statusClass = '';
+
+    // Compare spend % vs ideal (day %)
+    // If spend is within 10% of ideal, we're on track
+    // If over by more than 15%, danger
+    // If over by 5-15%, warning
+    const variance = spendPercent - dayPercent;
+
+    if (variance > 15) {
+        status = 'Overspend';
+        statusClass = 'danger';
+    } else if (variance > 5) {
+        status = 'Watch';
+        statusClass = 'warning';
+    } else if (spendPercent >= 95) {
+        status = 'Near Limit';
+        statusClass = 'danger';
+    } else {
+        status = 'On Track';
+        statusClass = '';
+    }
+
+    // Update DOM
+    percentageEl.textContent = spendPercent.toFixed(1) + '%';
+    progressFill.style.width = Math.min(spendPercent, 100) + '%';
+    progressFill.className = 'pacing-progress-fill' + (statusClass ? ' ' + statusClass : '');
+
+    if (idealMarker) {
+        idealMarker.style.left = dayPercent + '%';
+    }
+
+    spentEl.textContent = formatCurrency(totalSpend);
+    budgetEl.textContent = formatCurrency(effectiveBudget);
+    dayProgressEl.textContent = `${currentDay}/${daysInMonth}`;
+
+    if (statusBadge) {
+        statusBadge.textContent = status;
+        statusBadge.className = 'badge-pill' + (statusClass === 'danger' ? ' urgent' : '');
+    }
+}
+
+// Widget D: Platform Split (Meta vs Google)
+async function renderPlatformSplit() {
+    const tbody = document.getElementById('platform-split-body');
+    if (!tbody) return;
+
+    // Aggregate by platform
+    const platforms = {
+        'Meta Ads': { spend: 0, clicks: 0, conversions: 0 },
+        'Google Ads': { spend: 0, clicks: 0, conversions: 0 }
+    };
+
+    (adsData || []).forEach(c => {
+        const platform = c.platform || '';
+        if (platform.includes('Meta')) {
+            platforms['Meta Ads'].spend += parseFloat(c.spend) || 0;
+            platforms['Meta Ads'].clicks += parseInt(c.clicks) || 0;
+            platforms['Meta Ads'].conversions += parseInt(c.conversions) || 0;
+        } else if (platform.includes('Google')) {
+            platforms['Google Ads'].spend += parseFloat(c.spend) || 0;
+            platforms['Google Ads'].clicks += parseInt(c.clicks) || 0;
+            platforms['Google Ads'].conversions += parseInt(c.conversions) || 0;
+        }
+    });
+
+    // Calculate CPA for each
+    const metaCPA = platforms['Meta Ads'].conversions > 0
+        ? platforms['Meta Ads'].spend / platforms['Meta Ads'].conversions
+        : 0;
+    const googleCPA = platforms['Google Ads'].conversions > 0
+        ? platforms['Google Ads'].spend / platforms['Google Ads'].conversions
+        : 0;
+
+    // Determine winners (lower CPA is better, higher clicks is better)
+    const spendWinner = platforms['Meta Ads'].spend > platforms['Google Ads'].spend ? 'meta' : 'google';
+    const cpaWinner = metaCPA > 0 && googleCPA > 0 ? (metaCPA < googleCPA ? 'meta' : 'google') : null;
+    const clicksWinner = platforms['Meta Ads'].clicks > platforms['Google Ads'].clicks ? 'meta' : 'google';
+
+    // Check if we have any data
+    const hasData = platforms['Meta Ads'].spend > 0 || platforms['Google Ads'].spend > 0;
+
+    if (!hasData) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" class="loading-cell">
+                    <span style="color: var(--text-muted);">Sin datos de plataformas</span>
+                </td>
+            </tr>`;
+        return;
+    }
+
+    tbody.innerHTML = `
+        <tr>
+            <td>
+                <div class="platform-cell">
+                    <div class="platform-icon meta">M</div>
+                    <span>Meta Ads</span>
+                </div>
+            </td>
+            <td class="metric-col">
+                ${formatCurrency(platforms['Meta Ads'].spend)}
+                ${spendWinner === 'meta' ? '<span class="platform-winner">▲</span>' : ''}
+            </td>
+            <td class="metric-col">
+                ${metaCPA > 0 ? formatCurrency(metaCPA) : '-'}
+                ${cpaWinner === 'meta' ? '<span class="platform-winner">★</span>' : ''}
+            </td>
+            <td class="metric-col">
+                ${formatNumber(platforms['Meta Ads'].clicks)}
+                ${clicksWinner === 'meta' ? '<span class="platform-winner">▲</span>' : ''}
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="platform-cell">
+                    <div class="platform-icon google">G</div>
+                    <span>Google Ads</span>
+                </div>
+            </td>
+            <td class="metric-col">
+                ${formatCurrency(platforms['Google Ads'].spend)}
+                ${spendWinner === 'google' ? '<span class="platform-winner">▲</span>' : ''}
+            </td>
+            <td class="metric-col">
+                ${googleCPA > 0 ? formatCurrency(googleCPA) : '-'}
+                ${cpaWinner === 'google' ? '<span class="platform-winner">★</span>' : ''}
+            </td>
+            <td class="metric-col">
+                ${formatNumber(platforms['Google Ads'].clicks)}
+                ${clicksWinner === 'google' ? '<span class="platform-winner">▲</span>' : ''}
+            </td>
+        </tr>`;
 }
 
 async function loadAdsTable() {
