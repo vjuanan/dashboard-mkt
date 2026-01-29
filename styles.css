@@ -136,6 +136,12 @@ body {
     color: var(--text-secondary);
 }
 
+.nexus-logo-img {
+    height: 38px;
+    width: auto;
+    object-fit: contain;
+}
+
 /* Navigation Tabs - Compact Pill Style */
 .header-nav {
     display: flex;
