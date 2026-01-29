@@ -253,114 +253,26 @@
                 </div>
             </div>
 
-            <!-- 2. Command Grid (Operational Widgets) -->
-            <div class="command-grid">
+            <thead>
+                <tr>
+                    <th class="platform-col">Plataforma</th>
+                    <th class="metric-col">Gasto</th>
+                    <th class="metric-col">CPA</th>
+                    <th class="metric-col">Clics</th>
+                </tr>
+            </thead>
+            <tbody id="platform-split-body">
+                <tr>
+                    <td colspan="4" class="loading-cell">
+                        <i data-lucide="loader-2" class="spin"></i> Cargando...
+                    </td>
+                </tr>
+            </tbody>
+            </table>
+            </div>
+            </div>
 
-                <!-- Left Column: Operational Widgets -->
-                <div class="command-column main-feed">
-
-                    <!-- Widget A: Próximos Lanzamientos -->
-                    <div class="radar-block">
-                        <div class="section-header">
-                            <h3><i data-lucide="rocket" class="text-purple"></i> Próximos Lanzamientos</h3>
-                            <span class="badge-pill">Content</span>
-                        </div>
-                        <div class="upcoming-launches-list" id="upcoming-launches-list">
-                            <!-- Populated by JS -->
-                            <div class="loading-placeholder">
-                                <i data-lucide="loader-2" class="spin"></i>
-                                <span>Cargando contenidos...</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Widget B: Solicitudes Urgentes -->
-                    <div class="radar-block">
-                        <div class="section-header">
-                            <h3><i data-lucide="alert-triangle" class="text-orange"></i> Solicitudes Urgentes</h3>
-                            <span class="badge-pill urgent">High</span>
-                        </div>
-                        <div class="urgent-requests-list" id="urgent-requests-list">
-                            <!-- Populated by JS -->
-                            <div class="loading-placeholder">
-                                <i data-lucide="loader-2" class="spin"></i>
-                                <span>Cargando solicitudes...</span>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- Right Column: Metrics Widgets -->
-                <div class="command-column action-radar">
-
-                    <!-- Widget C: Budget Pacing -->
-                    <div class="radar-block budget-pacing-block">
-                        <div class="section-header">
-                            <h3><i data-lucide="gauge" class="text-green"></i> Budget Pacing</h3>
-                            <div class="flex items-center gap-2">
-                                <span class="badge-pill" id="pacing-status-badge">-</span>
-                                <button class="btn-ghost-sm" onclick="openBudgetModal()" title="Editar Presupuesto">
-                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="budget-pacing-widget" id="budget-pacing-widget">
-                            <div class="pacing-main">
-                                <div class="pacing-header">
-                                    <span class="pacing-label">Gasto vs Presupuesto Mensual</span>
-                                    <span class="pacing-percentage" id="pacing-percentage">--%</span>
-                                </div>
-                                <div class="pacing-progress-bar">
-                                    <div class="pacing-progress-fill" id="pacing-progress-fill" style="width: 0%"></div>
-                                    <div class="pacing-ideal-marker" id="pacing-ideal-marker"></div>
-                                </div>
-                                <div class="pacing-details">
-                                    <div class="pacing-detail">
-                                        <span class="detail-label">Gastado</span>
-                                        <span class="detail-value" id="pacing-spent">$0</span>
-                                    </div>
-                                    <div class="pacing-detail">
-                                        <span class="detail-label">Presupuesto</span>
-                                        <span class="detail-value" id="pacing-budget">$0</span>
-                                    </div>
-                                    <div class="pacing-detail">
-                                        <span class="detail-label">Día del Mes</span>
-                                        <span class="detail-value" id="pacing-day-progress">-</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Widget D: Platform Split -->
-                    <div class="radar-block">
-                        <div class="section-header">
-                            <h3><i data-lucide="bar-chart-3" class="text-blue"></i> Platform Split</h3>
-                            <span class="badge-pill">Meta vs Google</span>
-                        </div>
-                        <div class="platform-split-widget" id="platform-split-widget">
-                            <table class="platform-split-table">
-                                <thead>
-                                    <tr>
-                                        <th class="platform-col">Plataforma</th>
-                                        <th class="metric-col">Gasto</th>
-                                        <th class="metric-col">CPA</th>
-                                        <th class="metric-col">Clics</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="platform-split-body">
-                                    <tr>
-                                        <td colspan="4" class="loading-cell">
-                                            <i data-lucide="loader-2" class="spin"></i> Cargando...
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                </div>
+            </div>
             </div>
         </section>
 

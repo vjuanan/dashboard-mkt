@@ -220,6 +220,7 @@ async function loadUnifiedDashboard() {
 
     if (hasData) {
         // REAL DATA CALCULATION
+        // REAL DATA CALCULATION
         adsData.forEach(c => {
             // 1. Try Main Columns First
             let spend = parseFloat(c.spend) || 0;
@@ -260,8 +261,15 @@ async function loadUnifiedDashboard() {
                 }
             }
 
+            // Force number type
+            spend = Number(spend) || 0;
+            imp = Number(imp) || 0;
+            clk = Number(clk) || 0;
+
             // Sync back to object for Table View validity
             c.spend = spend;
+            c.impressions = imp;
+            c.clicks = clk;
 
             totalSpend += spend;
             totalImpressions += imp;
@@ -291,13 +299,10 @@ async function loadUnifiedDashboard() {
         if (document.getElementById('global-spend-trend')) document.getElementById('global-spend-trend').innerHTML = '<span style="color:orange; font-size:0.8em">Sin Datos de Costo</span>';
     }
 
-    // 2. Timeline Feed
-    renderTimelineFeed();
-
-    // 3. Action Radar
+    // 2. Operational Widgets (Replaces Timeline Feed)
     renderActionRadar();
 
-    // 4. Enable Interactions
+    // 3. Enable Interactions
     setupScorecardInteractions();
 }
 
@@ -520,6 +525,7 @@ function renderTimelineCard(ev) {
 
 async function renderActionRadar() {
     // NEW: Call all operational widget renderers
+    // Trigger all widgets in parallel
     await Promise.all([
         renderUpcomingLaunches(),
         renderUrgentRequests(),
@@ -542,25 +548,28 @@ async function renderUpcomingLaunches() {
 
         if (error) throw error;
 
-        // Filter for pending/upcoming items with future dates
+        // Filter for pending/upcoming items with future dates (or today)
+        // Sort by Date ASC (Closest first)
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         const upcoming = (content || [])
             .filter(item => {
+                if (item.production_stage === 'published') return false;
                 if (!item.scheduled_date) return false;
+
                 const itemDate = new Date(item.scheduled_date);
-                // Include items scheduled for today or future
-                return itemDate >= today && item.production_stage !== 'scheduled';
+                // Can be today or future
+                return itemDate >= today;
             })
             .sort((a, b) => new Date(a.scheduled_date) - new Date(b.scheduled_date))
             .slice(0, 3);
 
         if (upcoming.length === 0) {
             container.innerHTML = `
-                <div class="widget-empty-state">
-                    <i data-lucide="calendar-check"></i>
-                    <span>No hay lanzamientos pendientes</span>
+                <div class="empty-widget-state text-center p-4 text-slate-400">
+                    <i data-lucide="check-circle" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                    <p class="text-sm">Sin lanzamientos pendientes</p>
                 </div>`;
             return;
         }
@@ -578,33 +587,25 @@ async function renderUpcomingLaunches() {
                 default: 'file-text'
             };
             const iconName = channelIcons[channel] || channelIcons.default;
-
-            // Format date
-            const date = new Date(item.scheduled_date);
-            const formattedDate = date.toLocaleDateString('es-AR', {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short'
-            });
+            const itemDate = new Date(item.scheduled_date + 'T12:00:00'); // Prevent timezone shift
 
             return `
-                <div class="launch-item" onclick="openContentDetail('${item.id}')">
-                    <div class="launch-icon ${iconClass}">
-                        <i data-lucide="${iconName}"></i>
+                <div class="flex items-center p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer" onclick="openContentDetail('${item.id}')">
+                    <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center bg-slate-100 text-slate-500 mr-3 social-icon ${channel}">
+                         <i data-lucide="${iconName}" class="w-5 h-5"></i>
                     </div>
-                    <div class="launch-info">
-                        <div class="launch-title">${item.title || 'Sin título'}</div>
-                        <div class="launch-date">${formattedDate}</div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-sm font-medium text-slate-800 truncate">${item.title || 'Sin título'}</h4>
+                        <p class="text-xs text-slate-500">${itemDate.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                    </div>
+                    <div class="ml-2">
+                        <span class="px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-600">${item.production_stage}</span>
                     </div>
                 </div>`;
         }).join('');
     } catch (e) {
         console.error('Error loading upcoming launches:', e);
-        container.innerHTML = `
-            <div class="widget-empty-state">
-                <i data-lucide="alert-circle"></i>
-                <span>Error al cargar contenidos</span>
-            </div>`;
+        container.innerHTML = `<div class="p-4 text-red-400 text-sm">Error al cargar</div>`;
     }
 }
 
@@ -614,51 +615,51 @@ async function renderUrgentRequests() {
     if (!container) return;
 
     try {
-        // Get all inputs
         const { data: inputs, error } = await db.inputs.getAll();
-
         if (error) throw error;
 
-        // Filter for high priority and not done
+        // Filter: High Priority & Not Done
         const urgent = (inputs || [])
             .filter(item => item.priority === 'high' && item.status !== 'done')
             .slice(0, 3);
 
         if (urgent.length === 0) {
             container.innerHTML = `
-                <div class="widget-empty-state">
-                    <i data-lucide="check-circle"></i>
-                    <span>No hay solicitudes urgentes</span>
+                <div class="empty-widget-state text-center p-4 text-slate-400">
+                    <i data-lucide="check-circle" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                    <p class="text-sm">Todo al día</p>
                 </div>`;
             return;
         }
 
         container.innerHTML = urgent.map(item => {
-            // Get assignee name from profiles cache if available
-            let assigneeName = 'Sin asignar';
+            // Check assignee
+            let assignee = 'Sin asignar';
             if (item.assigned_to && teamProfiles.length > 0) {
-                const profile = teamProfiles.find(p => p.id === item.assigned_to);
-                if (profile) assigneeName = profile.full_name;
-            } else if (item.requester_name) {
-                assigneeName = item.requester_name;
+                const found = teamProfiles.find(p => p.id === item.assigned_to);
+                if (found) assignee = found.full_name;
             }
 
             return `
-                <div class="request-item" onclick="openInputDetail('${item.id}')">
-                    <span class="priority-badge high">High</span>
-                    <div class="request-info">
-                        <div class="request-title">${item.title || 'Sin título'}</div>
-                        <div class="request-owner">${assigneeName}</div>
+                <div class="flex items-center p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer" onclick="openInputDetail('${item.id}')">
+                    <div class="mr-3">
+                        <span class="flex h-3 w-3 relative">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                        </span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-sm font-medium text-slate-800 truncate">${item.title}</h4>
+                        <p class="text-xs text-slate-500">Responsable: ${assignee}</p>
+                    </div>
+                    <div class="ml-2">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-600 uppercase">HIGH</span>
                     </div>
                 </div>`;
         }).join('');
     } catch (e) {
         console.error('Error loading urgent requests:', e);
-        container.innerHTML = `
-            <div class="widget-empty-state">
-                <i data-lucide="alert-circle"></i>
-                <span>Error al cargar solicitudes</span>
-            </div>`;
+        container.innerHTML = `<div class="p-4 text-red-400 text-sm">Error al cargar</div>`;
     }
 }
 
