@@ -100,6 +100,52 @@
 </head>
 
 <body>
+    <!-- Budget Modal -->
+    <div id="modal-budget" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Presupuesto Mensual</h3>
+                <button class="modal-close" onclick="closeModal('budget')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Mes</label>
+                    <input type="month" id="budget-month" class="form-input" readonly>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label">Google Ads Budget</label>
+                        <div class="input-group">
+                            <span class="input-prefix">$</span>
+                            <input type="number" id="budget-google" class="form-input" min="0" step="1000"
+                                placeholder="0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Meta Ads Budget</label>
+                        <div class="input-group">
+                            <span class="input-prefix">$</span>
+                            <input type="number" id="budget-meta" class="form-input" min="0" step="1000"
+                                placeholder="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" style="font-weight: 600; margin-top: 0.5rem;">Total Calculado: <span
+                            id="budget-total-display">$0</span></label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('budget')">Cancelar</button>
+                <button class="btn-primary" onclick="saveBudgets()" id="budget-submit">
+                    Guardar Presupuesto
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div id="toast-container" class="toast-container"></div>
 
@@ -252,7 +298,12 @@
                     <div class="radar-block budget-pacing-block">
                         <div class="section-header">
                             <h3><i data-lucide="gauge" class="text-green"></i> Budget Pacing</h3>
-                            <span class="badge-pill" id="pacing-status-badge">-</span>
+                            <div class="flex items-center gap-2">
+                                <span class="badge-pill" id="pacing-status-badge">-</span>
+                                <button class="btn-ghost-sm" onclick="openBudgetModal()" title="Editar Presupuesto">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="budget-pacing-widget" id="budget-pacing-widget">
                             <div class="pacing-main">

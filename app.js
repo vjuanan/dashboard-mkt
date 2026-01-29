@@ -164,7 +164,8 @@ async function loadAllData() {
         loadCalendar(),
         loadInputs(),
         loadTeamDocs(),
-        loadProfiles()
+        loadProfiles(),
+        loadBudgets()
     ]);
 
     // 2. Load Ads Data (Crucial for Dashboard)
@@ -673,11 +674,19 @@ async function renderBudgetPacing() {
     // Calculate total spend from adsData
     const totalSpend = (adsData || []).reduce((sum, c) => sum + (parseFloat(c.spend) || 0), 0);
 
-    // Calculate total budget from adsData
-    const totalBudget = (adsData || []).reduce((sum, c) => sum + (parseFloat(c.budget) || 0), 0);
+    // Calculate total budget (Manual Input Preferred, Fallback to Campaign Sum if 0)
+    // If we have a manual budget set for this month, use it.
+    let effectiveBudget = currentBudgets.total;
 
-    // Use a reasonable default budget if none found
-    const effectiveBudget = totalBudget > 0 ? totalBudget : 50000; // Default 50k for demo
+    // Fallback: If no manual budget (0), try summing campaign budgets?
+    // User requested "inputs para cargar los presupuestos", implies overriding the sum.
+    // If manual is 0, let's show 0 or maybe a 'Set Budget' hint.
+    // Let's stick to manual budget as the source of truth if implemented.
+    if (effectiveBudget === 0) {
+        effectiveBudget = (adsData || []).reduce((sum, c) => sum + (parseFloat(c.budget) || 0), 0);
+    }
+
+    if (effectiveBudget === 0) effectiveBudget = 1; // Avoid division by zero
 
     // Calculate percentage
     const spendPercent = (totalSpend / effectiveBudget) * 100;
