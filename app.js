@@ -1554,19 +1554,23 @@ async function loadProfiles() {
 }
 
 function populateProfileSelects() {
-    const select = document.getElementById('input-assigned');
-    if (!select) return;
+    const ids = ['input-assigned', 'content-assigned'];
 
-    // Keep first option
-    const first = select.options[0];
-    select.innerHTML = '';
-    select.appendChild(first);
+    ids.forEach(id => {
+        const select = document.getElementById(id);
+        if (!select) return;
 
-    teamProfiles.forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.id;
-        opt.textContent = p.full_name;
-        select.appendChild(opt);
+        // Keep first option
+        const first = select.options[0];
+        select.innerHTML = '';
+        select.appendChild(first);
+
+        teamProfiles.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.full_name;
+            select.appendChild(opt);
+        });
     });
 }
 
