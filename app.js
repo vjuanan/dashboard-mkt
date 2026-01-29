@@ -79,8 +79,17 @@ const actionLabels = {
     ads: 'Anuncio',
     content: 'Contenido',
     inputs: 'Input',
-    team: 'Doc'
+    unified: 'Campaña',
+    ads: 'Anuncio',
+    content: 'Contenido',
+    inputs: 'Input',
+    team: 'Doc',
+    communities: 'Contacto'
 };
+
+// Communities State
+let communitiesList = [];
+let currentCommunity = null;
 
 // ===== DOM Elements =====
 const header = document.getElementById('main-header');
@@ -158,7 +167,8 @@ async function loadAllData() {
         loadCalendar(),
         loadInputs(),
         loadTeamDocs(),
-        loadProfiles()
+        loadProfiles(),
+        loadCommunities()
     ]);
 
     // 2. Load Ads Data (Crucial for Dashboard)
@@ -1673,6 +1683,7 @@ function setupNavigation() {
             if (viewId === 'ads') loadAdsTable();
             else if (viewId === 'content') loadCalendar();
             else if (viewId === 'inputs') loadInputs();
+            else if (viewId === 'communities') loadCommunities();
         });
     });
 
@@ -1685,6 +1696,9 @@ function setupNavigation() {
                 openModal('content');
             } else if (currentView === 'inputs') {
                 openModal('input');
+            } else if (currentView === 'communities') {
+                // openModal('contact'); // Need to implement contact modal or use existing placeholder
+                showToast('Funcionalidad de crear contacto en desarrollo', 'info');
             }
         });
     }
@@ -2844,6 +2858,7 @@ window.loadKanbanBoard = loadKanbanBoard;
 window.editTeamDoc = editTeamDoc;
 window.deleteTeamDoc = deleteTeamDoc;
 
+
 // ===== Global Shortcuts =====
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -2854,3 +2869,141 @@ document.addEventListener('keydown', (e) => {
         }
     }
 });
+
+// ===== COMMUNITIES FEATURE =====
+
+async function loadCommunities() {
+    const listEl = document.getElementById('communities-sidebar-list');
+    if (!listEl) return;
+
+    // Check if we already have them loaded
+    if (communitiesList.length > 0 && document.getElementById('contacts-table-body') && document.getElementById('contacts-table-body').children.length > 0) return;
+
+    listEl.innerHTML = '<div class="text-sm text-slate-400 p-2">Cargando...</div>';
+
+    const { data: communities, error } = await db.communities.getAll();
+
+    if (error) {
+        console.error('Error fetching communities:', error);
+        listEl.innerHTML = '<div class="text-sm text-red-400 p-2">Error cargando comunidades</div>';
+        return;
+    }
+
+    communitiesList = communities;
+    renderCommunitiesSidebar();
+
+    // Select first one by default if none selected
+    if (!currentCommunity && communities.length > 0) {
+        // Prefer 'all' slug if exists, otherwise first
+        const allCom = communities.find(c => c.slug === 'all');
+        selectCommunity(allCom || communities[0]);
+    }
+}
+
+function renderCommunitiesSidebar() {
+    const listEl = document.getElementById('communities-sidebar-list');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    communitiesList.forEach(comm => {
+        const item = document.createElement('button');
+        const isActive = currentCommunity && currentCommunity.id === comm.id;
+        item.className = `w-full text-left px-3 py-2 rounded-md flex items-center space-x-2 transition-colors ${isActive ? 'bg-white shadow-sm ring-1 ring-slate-200 text-slate-800' : 'text-slate-600 hover:bg-slate-100'}`;
+
+        item.onclick = () => selectCommunity(comm);
+        item.innerHTML = `
+            <span class="text-lg">${comm.icon || '📍'}</span>
+            <span class="font-medium truncate">${comm.name}</span>
+        `;
+        listEl.appendChild(item);
+    });
+}
+
+async function selectCommunity(community) {
+    if (!community) return;
+    currentCommunity = community;
+    renderCommunitiesSidebar(); // Update active state
+
+    // Update Header
+    const titleEl = document.getElementById('community-current-title');
+    const descEl = document.getElementById('community-current-desc');
+    if (titleEl) titleEl.textContent = community.name;
+    if (descEl) descEl.textContent = community.description || 'Vista de comunidad';
+
+    // Load Contacts
+    await loadContacts(community.id);
+}
+
+async function loadContacts(communityId) {
+    const tableBody = document.getElementById('contacts-table-body');
+    const emptyState = document.getElementById('community-empty');
+    if (!tableBody) return;
+
+    tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-slate-400">Cargando contactos...</td></tr>';
+    if (emptyState) emptyState.classList.add('hidden');
+
+    let data = [];
+    let error = null;
+
+    // Check slug for 'all'
+    if (currentCommunity && currentCommunity.slug === 'all') {
+        const res = await db.contacts.getAll();
+        data = res.data;
+        error = res.error;
+    } else {
+        const res = await db.contacts.getByCommunity(communityId);
+        data = res.data;
+        error = res.error;
+    }
+
+    if (error) {
+        console.error('Error loading contacts:', error);
+        tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-red-400">Error al cargar contactos</td></tr>';
+        return;
+    }
+
+    renderContacts(data);
+}
+
+function renderContacts(data) {
+    const tableBody = document.getElementById('contacts-table-body');
+    const emptyState = document.getElementById('community-empty');
+
+    if (!data || data.length === 0) {
+        tableBody.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('hidden');
+        return;
+    }
+
+    if (emptyState) emptyState.classList.add('hidden');
+
+    tableBody.innerHTML = data.map(contact => `
+        <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+            <td class="py-3 px-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">
+                        ${contact.avatar_url ? `<img src="${contact.avatar_url}" class="w-full h-full rounded-full object-cover">` : getInitials(contact.full_name)}
+                    </div>
+                    <span class="font-medium text-slate-700">${contact.full_name}</span>
+                </div>
+            </td>
+            <td class="py-3 px-4 text-slate-600">${contact.email || '-'}</td>
+            <td class="py-3 px-4">
+                <span class="px-2 py-1 rounded-full text-xs font-medium ${contact.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}">
+                    ${contact.status === 'active' ? 'Activo' : 'Inactivo'}
+                </span>
+            </td>
+            <td class="text-right py-3 px-4">
+                <button class="text-slate-400 hover:text-indigo-600 p-1" title="Ver detalles">
+                    <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+
+    if (window.lucide) window.lucide.createIcons();
+}
+
+function getInitials(name) {
+    return name ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
+}

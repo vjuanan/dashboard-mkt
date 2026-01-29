@@ -33,7 +33,7 @@
         }
     </script>
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/png" href="assets/nexus-logo.png">
+    <link rel="icon" type="image/png" href="nexus_link_logo.png">
 
     <!-- Modern Hover Effects -->
     <style>
@@ -108,7 +108,7 @@
         <div class="header-content">
             <!-- Logo -->
             <div class="header-logo">
-                <img src="assets/nexus-logo.png" alt="Nexus Logo" class="nexus-logo-img">
+                <img src="nexus_link_logo.png" alt="Nexus Logo" class="nexus-link-logo-img">
                 <span class="logo-divider"></span>
                 <span class="logo-subtitle">Marketing Ops</span>
             </div>
@@ -136,6 +136,10 @@
                 <button class="nav-tab" data-view="team">
                     <i data-lucide="users" class="nav-icon"></i>
                     Team
+                </button>
+                <button class="nav-tab" data-view="communities">
+                    <i data-lucide="users-2" class="nav-icon"></i>
+                    Comunidades
                 </button>
             </nav>
 
@@ -538,6 +542,61 @@
                 </button>
             </div>
         </section>
+
+        <!-- Communities View -->
+        <section id="view-communities" class="view">
+            <div class="communities-wrapper h-full flex">
+                <!-- Sidebar -->
+                <aside class="w-64 border-r border-slate-200 bg-slate-50 flex flex-col h-full">
+                    <div class="p-4 border-b border-slate-200">
+                        <h3 class="font-semibold text-slate-700">Comunidades</h3>
+                    </div>
+                    <nav class="flex-1 overflow-y-auto p-2 space-y-1" id="communities-sidebar-list">
+                        <!-- Populated by JS -->
+                        <div class="text-sm text-slate-400 p-2">Cargando...</div>
+                    </nav>
+                </aside>
+
+                <!-- Main Content -->
+                <div class="flex-1 flex flex-col h-full bg-white">
+                    <div class="p-6 border-b border-slate-200 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800" id="community-current-title">Todos los
+                                Contactos</h2>
+                            <p class="text-slate-500 text-sm" id="community-current-desc">Vista general de la comunidad
+                            </p>
+                        </div>
+                        <button class="btn-primary" onclick="openModal('contact')">
+                            <i data-lucide="user-plus" class="btn-icon"></i>
+                            Nuevo Contacto
+                        </button>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto p-6" id="community-main-content">
+                        <!-- Contact List Table/Grid -->
+                        <div class="empty-state hidden" id="community-empty">
+                            <i data-lucide="users" class="empty-icon"></i>
+                            <h3>No hay contactos</h3>
+                            <p>Esta comunidad está vacía</p>
+                        </div>
+                        <table class="data-table w-full" id="contacts-table">
+                            <thead>
+                                <tr>
+                                    <th class="text-left py-3 px-4 font-medium text-slate-500">Nombre</th>
+                                    <th class="text-left py-3 px-4 font-medium text-slate-500">Email</th>
+                                    <th class="text-left py-3 px-4 font-medium text-slate-500">Estado</th>
+                                    <th class="text-right py-3 px-4 font-medium text-slate-500">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contacts-table-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <!-- Slide-over Panel -->
