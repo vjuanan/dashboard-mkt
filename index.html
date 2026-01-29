@@ -252,28 +252,128 @@
                     </div>
                 </div>
             </div>
+            <!-- ROW 2: Operational Flow (New Widgets) -->
+            <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 mt-8">
 
-            <thead>
-                <tr>
-                    <th class="platform-col">Plataforma</th>
-                    <th class="metric-col">Gasto</th>
-                    <th class="metric-col">CPA</th>
-                    <th class="metric-col">Clics</th>
-                </tr>
-            </thead>
-            <tbody id="platform-split-body">
-                <tr>
-                    <td colspan="4" class="loading-cell">
-                        <i data-lucide="loader-2" class="spin"></i> Cargando...
-                    </td>
-                </tr>
-            </tbody>
-            </table>
-            </div>
-            </div>
+                <!-- Widget A: Próximos Lanzamientos -->
+                <div class="content-block"
+                    style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.5rem;">
+                    <div class="section-header"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3
+                            style="font-size: 1.1rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                            <i data-lucide="rocket" class="text-indigo-600"></i> Próximos Lanzamientos
+                        </h3>
+                        <button class="btn-ghost-sm" onclick="openModal('content')">
+                            <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                        </button>
+                    </div>
+                    <div class="widget-list" id="upcoming-launches-list">
+                        <!-- Populated by JS -->
+                        <div class="skeleton-list">
+                            <div class="skeleton-item"
+                                style="height: 48px; background: #f1f5f9; border-radius: 8px; margin-bottom: 8px;">
+                            </div>
+                            <div class="skeleton-item"
+                                style="height: 48px; background: #f1f5f9; border-radius: 8px; margin-bottom: 8px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            </div>
-            </div>
+                <!-- Widget B: Solicitudes Urgentes -->
+                <div class="content-block"
+                    style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.5rem;">
+                    <div class="section-header"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3
+                            style="font-size: 1.1rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                            <i data-lucide="alert-circle" class="text-orange-500"></i> Solicitudes Urgentes
+                        </h3>
+                        <button class="btn-ghost-sm" onclick="openModal('input')">
+                            <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                        </button>
+                    </div>
+                    <div class="widget-list" id="urgent-requests-list">
+                        <!-- Populated by JS -->
+                        <div class="skeleton-list">
+                            <div class="skeleton-item"
+                                style="height: 48px; background: #f1f5f9; border-radius: 8px; margin-bottom: 8px;">
+                            </div>
+                            <div class="skeleton-item"
+                                style="height: 48px; background: #f1f5f9; border-radius: 8px; margin-bottom: 8px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ROW 3: Financial & Performance -->
+            <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+                <!-- Widget C: Budget Pacing (Already Implemented) -->
+                <div class="radar-block budget-pacing-block">
+                    <div class="section-header">
+                        <h3><i data-lucide="gauge" class="text-green-600"></i> Budget Pacing</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="badge-pill" id="pacing-status-badge">-</span>
+                            <button class="btn-ghost-sm" onclick="openBudgetModal()" title="Editar Presupuesto">
+                                <i data-lucide="edit-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="budget-pacing-widget" id="budget-pacing-widget">
+                        <div class="pacing-main">
+                            <div class="pacing-header">
+                                <span class="pacing-label">Gasto vs Presupuesto Mensual</span>
+                                <span class="pacing-percentage" id="pacing-percentage">--%</span>
+                            </div>
+                            <div class="pacing-progress-bar">
+                                <div class="pacing-progress-fill" id="pacing-progress-fill" style="width: 0%"></div>
+                                <div class="pacing-ideal-marker" id="pacing-ideal-marker"></div>
+                            </div>
+                            <div class="pacing-details">
+                                <div class="pacing-detail">
+                                    <span class="detail-label">Gastado</span>
+                                    <span class="detail-value" id="pacing-spent">$0</span>
+                                </div>
+                                <div class="pacing-detail">
+                                    <span class="detail-label">Presupuesto</span>
+                                    <span class="detail-value" id="pacing-budget">$0</span>
+                                </div>
+                                <div class="pacing-detail">
+                                    <span class="detail-label">Día del Mes</span>
+                                    <span class="detail-value" id="pacing-day-progress">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Widget D: Platform Split (New) -->
+                <div class="radar-block">
+                    <div class="section-header">
+                        <h3><i data-lucide="pie-chart" class="text-purple-600"></i> Platform Split</h3>
+                    </div>
+                    <div class="platform-split-widget">
+                        <table class="simple-table w-full">
+                            <thead>
+                                <tr>
+                                    <th class="text-left font-semibold text-slate-500 pb-2">Plataforma</th>
+                                    <th class="font-semibold text-slate-500 pb-2">Inversión</th>
+                                    <th class="font-semibold text-slate-500 pb-2">CPA</th>
+                                    <th class="font-semibold text-slate-500 pb-2">Clics</th>
+                                </tr>
+                            </thead>
+                            <tbody id="platform-split-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </section>
         </section>
 
         <!-- Ads View -->
